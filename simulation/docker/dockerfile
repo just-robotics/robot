@@ -1,0 +1,29 @@
+FROM osrf/ros:humble-desktop-full
+
+# workspace setup
+
+ENV WS /workspace
+ENV ROS_DISTRO humble
+RUN echo "source ${WS}/install/setup.bash" >> ~/.bashrc
+RUN echo "cd /workspace" >> ~/.bashrc
+RUN echo "cp -r /workspace/.gazebo /" >> ~/.bashrc
+RUN echo "cp -r /workspace/.gazebo ~/" >> ~/.bashrc
+
+
+# Install ROS pkgs 
+
+RUN apt update -y
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-slam-toolbox
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-navigation2
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-nav2-bringup
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-gazebo-ros
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-gazebo-msgs
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-gazebo-plugins
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rtabmap-ros
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-librealsense2*
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-realsense2-*
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-nav2-smac-planner
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-nav2-theta-star-planner
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
+
+# Install dev tools
