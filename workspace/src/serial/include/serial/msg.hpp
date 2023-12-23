@@ -9,16 +9,19 @@
 #include <vector>
 
 
+namespace MsgStructure {
+    const uint8_t START_BYTE = 64;
+    const uint8_t START_BYTE0_IDX = 0;
+    const uint8_t START_BYTE1_IDX = 1;
+}
+
+
 class Msg {
 private:
-    inline static uint8_t START_BYTE;
-
     size_t size_;
     uint8_t* msg_;
 
 public:
-    static void init();
-
     Msg(size_t size);
     Msg(size_t size, const std::initializer_list<uint8_t> array);
     Msg(size_t size, const uint8_t* array);

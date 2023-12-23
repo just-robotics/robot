@@ -4,11 +4,6 @@
 #define START_BYTE 64
 
 
-void Connect::init() {
-    Msg::init();
-}
-
-
 bool Connect::openArduino() {
     if (Arduino == -1) {
         return false;
@@ -67,8 +62,8 @@ void Connect::calcCommandCheckSum(Msg* msg) {
 }
 
 
-uint8_t Connect::calcMessageCheckSum(uint8_t buffer[]) {
-    return crc8(buffer, MESSAGE_SIZE);
+uint8_t Connect::calcMessageCheckSum(uint8_t buffer[], size_t size) {
+    return crc8(buffer, size);
 }
 
 
@@ -78,19 +73,21 @@ void Connect::sendCommand(Msg* msg) {
 }
 
 
-Msg Connect::receiveMessage() {
-    uint8_t buf[MESSAGE_SIZE];
-    read(Arduino, buf, MESSAGE_SIZE);
+Msg Connect::receiveMessage(size_t size) {
+    uint8_t* buf = new uint8_t[size];
+    read(Arduino, buf, size);
 
     is_feedback_correct = false;
 
-    if (buf[MESSAGE_START_BYTE1_CELL] == START_BYTE && buf[MESSAGE_START_BYTE2_CELL] == START_BYTE) {
-        if (!calcMessageCheckSum(buf)) {
-            std::memcpy(message, buf, sizeof(uint8_t) * MESSAGE_SIZE);
+    if (buf[MsgStructure::START_BYTE0_IDX] == START_BYTE && buf[MsgStructure::START_BYTE1_IDX] == START_BYTE) {
+        
+        if (!calcMessageCheckSum(buf, size)) {
             is_feedback_correct = true;
+            return Msg(size, buf);
         }
     }
-    return Msg(MESSAGE_SIZE, buf);
+    delete[] buf;
+    return Msg(0, {});
 }
 
 
@@ -100,13 +97,14 @@ bool Connect::setConnection() {
         return false;
     }
 
+    Msg ping_cmd(PING_CMD_SIZE);
+
     auto start_timer = std::chrono::system_clock::now();
     while (!is_feedback_correct) {
-        Msg start_command(6, {64, 64, 3, 3, 3, 0});
         auto end_timer = std::chrono::system_clock::now();
         if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(TIMER)) {
-            sendCommand(&start_command);
-            receiveMessage();
+            sendCommand(&ping_cmd);
+            receiveMessage(PING_MSG_SIZE);
             start_timer = std::chrono::system_clock::now();
         }
     }

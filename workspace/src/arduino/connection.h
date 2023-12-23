@@ -1,30 +1,31 @@
-
-#ifndef Connection_h
-#define Connection_h
-
-
-#include "bot.h"
-#include "config.h"
+#ifndef connection_h
+#define connection_h
 
 
-uint8_t command[COMMAND_SIZE];
-uint8_t message[MESSAGE_SIZE];
+#define SERIAL_BAUDRATE 9600
+#define START_BYTE        64
+#define START_BYTE0_CELL   0
+#define START_BYTE1_CELL   1
+
+#define PING_CMD_SIZE      3
+#define PING_MSG_SIZE      3
 
 
-class Connection {
-private:
-    static uint8_t crc8(uint8_t data[], int size);
-    static uint16_t calcCommandCheckSum();
-    static uint16_t calcMessageCheckSum();
-    static void setMsgValues();
-    
-public:
-static void sendMessage();
-    static void receiveCommand();
-    
-private:
-    static void findCommand();
-};
+using callback = void (*) ();
+
+
+namespace Connection {
+    uint8_t* ping_msg = new uint8_t[PING_MSG_SIZE];
+  
+    uint8_t crc8(uint8_t data[], int size);
+    uint8_t calcCommandCheckSum(uint8_t* command, uint64_t size);
+    uint8_t calcMessageCheckSum(uint8_t* message, uint64_t size);
+    void sendMessage(uint8_t* message, uint64_t size);
+    bool receiveCommand(uint64_t size, callback cb);
+    void setConnection();
+
+    callback ping_callback = [] () {sendMessage(ping_msg, PING_MSG_SIZE);};
+}
 
 
 uint8_t Connection::crc8(uint8_t data[], int size) {
@@ -51,75 +52,54 @@ uint8_t Connection::crc8(uint8_t data[], int size) {
 }
 
 
-uint16_t Connection::calcCommandCheckSum() {
-    return crc8(command, COMMAND_SIZE);
+uint8_t Connection::calcCommandCheckSum(uint8_t* command, uint64_t size) {
+    return crc8(command, size);
 }
 
 
-uint16_t Connection::calcMessageCheckSum() {
-    return crc8(message, MESSAGE_SIZE-1);
+uint8_t Connection::calcMessageCheckSum(uint8_t* message, uint64_t size) {
+    return crc8(message, size - 1);
 }
 
 
-void Connection::setMsgValues() {
-    message[MESSAGE_START_BYTE1_CELL] = START_BYTE;
-    message[MESSAGE_START_BYTE2_CELL] = START_BYTE;
-    message[MESSAGE_ANSWER_CELL] = command[COMMAND_TASK_CELL];
-    message[MESSAGE_CHECKSUM_CELL] = calcMessageCheckSum();
-}
+void Connection::sendMessage(uint8_t* message, uint64_t size) {
+    message[START_BYTE0_CELL] = START_BYTE;
+    message[START_BYTE1_CELL] = START_BYTE;
+    message[size-1] = calcMessageCheckSum(message, size);
 
-
-void Connection::sendMessage() {
-    setMsgValues();
-
-    for (int cell = MESSAGE_START_BYTE1_CELL; cell < MESSAGE_SIZE; cell++) {
+    for (int cell = START_BYTE0_CELL; cell < size; cell++) {
         Serial.print(char(message[cell]));
     }
 }
 
 
-void Connection::receiveCommand() {
-    if (Serial.available() >= COMMAND_SIZE) {
-        command[COMMAND_START_BYTE1_CELL] = Serial.read();
-        command[COMMAND_START_BYTE2_CELL] = Serial.read();
-        if (command[COMMAND_START_BYTE1_CELL] == START_BYTE && command[COMMAND_START_BYTE2_CELL] == START_BYTE) {
-            for (int cell = COMMAND_TASK_CELL; cell < COMMAND_SIZE; cell++) {
-                command[cell] = Serial.read();
+bool Connection::receiveCommand(uint64_t size, callback cb) {
+    uint8_t command[size];
+    if (Serial.available() >= size) {
+        command[START_BYTE0_CELL] = Serial.read();
+        command[START_BYTE1_CELL] = Serial.read();
+        if (command[START_BYTE0_CELL] == START_BYTE && command[START_BYTE1_CELL] == START_BYTE) {
+            for (int idx = START_BYTE1_CELL + 1; idx < size; idx++) {
+                command[idx] = Serial.read();
             }
-            if (!calcCommandCheckSum()) {
-                findCommand();
-                sendMessage();
+            if (!calcCommandCheckSum(command, size)) {
+                cb();
+                return true;
             }
         }
     }
+    return false;
 }
 
 
-void Connection::findCommand() {
-    uint16_t value = command[COMMAND_VALUE1_CELL] * 100 + command[COMMAND_VALUE2_CELL];
-    uint8_t task = command[COMMAND_TASK_CELL];
-    if (task == MOVE_FORWARD_TASK) {
-        return Bot::moveForward(value);
-    }
-    if (task == MOVE_BACKWARD_TASK) {
-        return Bot::moveBackward(value);
-    }
-    if (task == STOP_TASK) {
-        return Bot::stop();
-    }
-    if (task == TURN_RIGHT_TASK) {
-        return Bot::turnRight(value);
-    }
-    if (task == TURN_LEFT_TASK) {
-        return Bot::turnLeft(value);
-    }
-    if (task == LED_ON_TASK) {
-        return Bot::ledOn();
-    }
-    if (task == LED_OFF_TASK) {
-        return Bot::ledOff();
+void Connection::setConnection() {
+    while (true) {
+      if (receiveCommand(PING_CMD_SIZE, ping_callback)) {
+          delete[] ping_msg;
+          return;
+      }
     }
 }
 
 
-#endif
+#endif // connection_h

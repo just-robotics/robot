@@ -1,17 +1,12 @@
 #include "../include/serial/msg.hpp"
 
 
-void Msg::init() {
-    START_BYTE = 64;
-}
-
-
 Msg::Msg(size_t size) {
     size_ = size;
     msg_ = new uint8_t[size_];
     memset(msg_, 0, size_);
-    msg_[0] = Msg::START_BYTE;
-    msg_[1] = Msg::START_BYTE;
+    msg_[0] = MsgStructure::START_BYTE;
+    msg_[1] = MsgStructure::START_BYTE;
 }
 
 
