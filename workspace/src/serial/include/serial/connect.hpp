@@ -16,6 +16,7 @@
 
 class Connect {
 private:
+    static const size_t SERIAL_BAUDRATE = 2000000;
     static const uint8_t TIMER = 200;
 
     static const uint8_t PING_MSG_SIZE = 3;
@@ -28,6 +29,7 @@ private:
     static bool openArduino();
 
 public:
+    static void delay(size_t ms);
     static bool setConnection();
     static void disconnectArduino();
 
@@ -41,6 +43,7 @@ public:
 
 public:
     static Msg receiveMessage(size_t size);
+    static bool checkFeedback();
 };
 
 

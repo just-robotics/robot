@@ -1,9 +1,6 @@
 #include "../include/serial/connect.hpp"
 
 
-#define START_BYTE 64
-
-
 bool Connect::openArduino() {
     if (Arduino == -1) {
         return false;
@@ -24,7 +21,9 @@ bool Connect::openArduino() {
     SerialPortSettings.c_cc[VMIN] = 0;     // read doesn't block
     SerialPortSettings.c_cc[VTIME] = 0;    // 0s read timeout
 
-    tcsetattr(Arduino,TCSANOW,&SerialPortSettings);
+    cfsetspeed(&SerialPortSettings, SERIAL_BAUDRATE);
+
+    tcsetattr(Arduino, TCSANOW, &SerialPortSettings);
 
     return true;
 }
@@ -79,15 +78,33 @@ Msg Connect::receiveMessage(size_t size) {
 
     is_feedback_correct = false;
 
-    if (buf[MsgStructure::START_BYTE0_IDX] == START_BYTE && buf[MsgStructure::START_BYTE1_IDX] == START_BYTE) {
+    if (buf[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && buf[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
         
         if (!calcMessageCheckSum(buf, size)) {
             is_feedback_correct = true;
             return Msg(size, buf);
         }
+        
     }
     delete[] buf;
     return Msg(0, {});
+}
+
+
+bool Connect::checkFeedback() {
+    return is_feedback_correct;
+}
+
+
+void Connect::delay(size_t ms) {
+    auto start_timer = std::chrono::system_clock::now();
+    while (true) {
+        auto end_timer = std::chrono::system_clock::now();
+        auto dt = std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count();
+        if (dt >= (int)ms) {
+            return;
+        }
+    }
 }
 
 
