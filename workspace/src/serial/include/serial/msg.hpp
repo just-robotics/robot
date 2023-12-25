@@ -44,4 +44,10 @@ public:
 };
 
 
+namespace Msgs {
+    inline std::vector<size_t> pose_target_idx = {2, 11, 20};
+    inline std::vector<size_t> pose_target_sz = {9, 9, 9};
+}
+
+
 #endif // SERIAL_MSG_HPP

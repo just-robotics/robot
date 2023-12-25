@@ -10,8 +10,20 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "std_msgs/msg/u_int8_multi_array.hpp"
 
 #include "msg.hpp"
+
+
+#define POSE_IDX       2
+#define TARGET_IDX    11
+#define U_IDX         20
+
+#define POSE_SIZE      9
+#define TARGET_SIZE    9
+#define U_SIZE         9
+
+#define POSE_MSG_SIZE 30
 
 
 class Connect {
@@ -34,7 +46,7 @@ public:
     static void disconnectArduino();
 
 private:
-    static uint8_t crc8(const uint8_t pocket[], uint64_t size);
+    static uint8_t crc8(const uint8_t* pocket, uint64_t size);
     static void calcCommandCheckSum(Msg* msg);
     static uint8_t calcMessageCheckSum(uint8_t buffer[], size_t size);
 
@@ -44,6 +56,11 @@ public:
 public:
     static Msg receiveMessage(size_t size);
     static bool checkFeedback();
+
+    static void int64_to_uint8arr(int64_t number, uint8_t* output);
+    static int64_t uint8arr_to_int64(uint8_t* data);
+    static void float_to_uint8arr(float val, uint8_t* data);
+    static float uint8arr_to_float(uint8_t* data);
 };
 
 

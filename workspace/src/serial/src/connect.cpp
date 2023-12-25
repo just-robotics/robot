@@ -3,6 +3,7 @@
 
 bool Connect::openArduino() {
     if (Arduino == -1) {
+        std::cout << "HERE\n";
         return false;
     }
 
@@ -29,7 +30,7 @@ bool Connect::openArduino() {
 }
 
 
-uint8_t Connect::crc8(const uint8_t pocket[], size_t size) {
+uint8_t Connect::crc8(const uint8_t* pocket, size_t size) {
     uint8_t BYTE_SIZE = 8;
     uint8_t MSB_MASK = 0x80;
     uint8_t byte;
@@ -57,7 +58,7 @@ uint8_t Connect::crc8(const uint8_t pocket[], size_t size) {
 
 void Connect::calcCommandCheckSum(Msg* msg) {
     uint8_t checksum = crc8(msg->msg(), msg->size() - 1);
-    msg->set_checksum(checksum);
+    msg->msg()[msg->size() - 1] = checksum;
 }
 
 
@@ -87,7 +88,7 @@ Msg Connect::receiveMessage(size_t size) {
         
     }
     delete[] buf;
-    return Msg(0, {});
+    return Msg(0);
 }
 
 
@@ -114,7 +115,7 @@ bool Connect::setConnection() {
         return false;
     }
 
-    Msg ping_cmd(PING_CMD_SIZE);
+    Msg ping_cmd(3);
 
     auto start_timer = std::chrono::system_clock::now();
     while (!is_feedback_correct) {
@@ -126,11 +127,63 @@ bool Connect::setConnection() {
         }
     }
     std::cout << "connected" << std::endl;
-    sleep(1);
+    delay(200);
     return true;
 }
 
 
 void Connect::disconnectArduino() {
     close(Arduino);
+}
+
+
+void Connect::int64_to_uint8arr(int64_t number, uint8_t* output) {
+    uint8_t byte = 0x000000FF;
+
+    output[8] = number < 0 ? 0 : 1;
+    uint64_t u_number = abs(number);
+
+    output[0] = u_number & byte;
+    
+    for (int i = 1; i < 8; i++) {
+        u_number >>= 8;
+        output[i] = u_number & byte;
+    }
+}
+
+
+int64_t Connect::uint8arr_to_int64(uint8_t* data) {
+    int64_t number = data[7];
+
+    for (int i = 6; i >= 0; i--) {
+        number <<= 8;
+        number = number | data[i];
+    }
+
+    number = data[8] == 1 ? number : -number;
+    
+    return number;
+}
+
+
+void Connect::float_to_uint8arr(float val, uint8_t* data) {
+    union {
+      float float_variable;
+      uint8_t uint8_array[4];
+    } un;
+
+    un.float_variable = val;
+
+    memcpy(data, un.uint8_array, 4);
+}
+
+
+float Connect::uint8arr_to_float(uint8_t* data) {
+    union {
+      float float_variable;
+      uint8_t uint8_array[4];
+    } un;
+
+    memcpy(un.uint8_array, data, 4);
+    return un.float_variable;
 }
