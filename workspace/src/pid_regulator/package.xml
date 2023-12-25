@@ -7,6 +7,8 @@
   <maintainer email="artemkondratev5@gmail.com">artem-kondratew</maintainer>
   <license>MIT</license>
 
+  <exec_depend>ros2launch</exec_depend>
+
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>

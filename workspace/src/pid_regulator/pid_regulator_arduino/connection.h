@@ -1,21 +1,16 @@
-#ifndef connection_h
-#define connection_h
+#ifndef PID_REGULATOR_CONNECTION_H
+#define PID_REGULATOR_CONNECTION_H
 
 
-#define SERIAL_BAUDRATE 2000000
-#define START_BYTE           64
-#define START_BYTE0_CELL      0
-#define START_BYTE1_CELL      1
-
-#define PING_CMD_SIZE         3
-#define PING_MSG_SIZE         3
+#include "config.h"
 
 
 using callback = void (*) (uint8_t* data, uint64_t size);
 
 
 namespace Connection {
-    uint8_t* ping_msg = new uint8_t[PING_MSG_SIZE];
+    uint8_t ping_msg[PING_MSG_SIZE];
+    uint8_t pose_msg[POSE_MSG_SIZE];
 
     uint8_t crc8(uint8_t data[], int size);
     uint8_t calcCommandCheckSum(uint8_t* command, uint64_t size);
@@ -23,6 +18,8 @@ namespace Connection {
     void sendMessage(uint8_t* message, uint64_t size);
     bool receiveCommand(uint64_t size, callback cb);
     void setConnection();
+    void int64_to_uint8arr(int64_t number, uint8_t* output);
+    float uint8arr_to_float(uint8_t* data);
 
     callback ping_callback = [] () {sendMessage(ping_msg, PING_MSG_SIZE);};
 }
@@ -75,7 +72,7 @@ void Connection::sendMessage(uint8_t* message, uint64_t size) {
 
 bool Connection::receiveCommand(uint64_t size, callback cb) {
     uint8_t command[size];
-    if (Serial.available() >= size) {
+    if (Serial.available() > size) {
         command[START_BYTE0_CELL] = Serial.read();
         command[START_BYTE1_CELL] = Serial.read();
         if (command[START_BYTE0_CELL] == START_BYTE && command[START_BYTE1_CELL] == START_BYTE) {
@@ -93,16 +90,38 @@ bool Connection::receiveCommand(uint64_t size, callback cb) {
 
 
 void Connection::setConnection() {
-    bool pin = false;
     while (true) {
       if (receiveCommand(PING_CMD_SIZE, ping_callback)) {
-          delete[] ping_msg;
-          return;
-          pin = !pin;
-          digitalWrite(LED_BUILTIN, pin);   
+          return; 
       }
     }
 }
 
 
-#endif // connection_h
+void Connection::int64_to_uint8arr(int64_t number, uint8_t* output) {
+    uint8_t byte = 0x000000FF;
+
+    output[8] = number < 0 ? 0 : 1;
+    uint64_t u_number = abs(number);
+
+    output[0] = u_number & byte;
+    
+    for (int i = 1; i < 8; i++) {
+        u_number >>= 8;
+        output[i] = u_number & byte;
+    }
+}
+
+
+float Connection::uint8arr_to_float(uint8_t* data) {
+    union {
+      float float_variable;
+      uint8_t uint8_array[4];
+    } un;
+
+    memcpy(un.uint8_array, data, 4);
+    return un.float_variable;
+}
+
+
+#endif // PID_REGULATOR_CONNECTION_H
