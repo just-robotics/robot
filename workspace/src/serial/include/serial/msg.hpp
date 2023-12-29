@@ -13,7 +13,14 @@ namespace MsgStructure {
     const uint8_t START_BYTE = 64;
     const size_t START_BYTE0_IDX = 0;
     const size_t START_BYTE1_IDX = 1;
-    const size_t LENGTH_IDX = 2;
+    const size_t TASK_IDX = 2;
+}
+
+
+namespace Tasks {
+    const uint8_t PING = 0;
+    const uint8_t DISCONNECT = 1;
+    const uint8_t SET_PID = 2;
 }
 
 
@@ -21,6 +28,7 @@ class Msg {
 private:
     size_t size_;
     uint8_t* msg_;
+    uint8_t task_;
 
 public:
     Msg(size_t size);
@@ -36,10 +44,12 @@ public:
     uint8_t operator[](size_t idx);
 
     void set_checksum(uint8_t checksum);
+    void set_task(uint8_t task);
 
     size_t size();
     uint8_t checksum();
     uint8_t* msg();
+    uint8_t task();
 
     void print(bool is_int=true);
 };

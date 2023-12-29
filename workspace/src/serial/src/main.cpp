@@ -12,6 +12,8 @@ int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<RosSerial>());
     rclcpp::shutdown();
+
+    Connect::disconnectArduino();
     
     return 0;
 }

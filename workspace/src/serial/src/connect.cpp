@@ -57,7 +57,7 @@ uint8_t Connect::crc8(const uint8_t* pocket, size_t size) {
 
 void Connect::calcCommandCheckSum(Msg* msg) {
     uint8_t checksum = crc8(msg->msg(), msg->size() - 1);
-    msg->msg()[msg->size() - 1] = checksum;
+    msg->set_checksum(checksum);
 }
 
 
@@ -69,6 +69,9 @@ uint8_t Connect::calcMessageCheckSum(uint8_t buffer[], size_t size) {
 void Connect::sendCommand(Msg* msg) {
     calcCommandCheckSum(msg);
     write(Arduino, msg->msg(), msg->size());
+    if (msg->size() != PING_CMD_SIZE && msg->task() == Tasks::PING) {
+        std::cout << "WARNING: NON_PING command was sent with PING task" << std::endl;
+    }
 }
 
 
@@ -133,6 +136,7 @@ bool Connect::setConnection() {
 
 void Connect::disconnectArduino() {
     close(Arduino);
+    std::cout << "disconnected" << std::endl;
 }
 
 

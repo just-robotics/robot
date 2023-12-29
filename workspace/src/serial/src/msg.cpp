@@ -3,11 +3,12 @@
 
 Msg::Msg(size_t size) {
     size_ = size;
+    task_ = Tasks::PING;
     msg_ = new uint8_t[size_];
     memset(msg_, 0, size_);
-    msg_[0] = MsgStructure::START_BYTE;
-    msg_[1] = MsgStructure::START_BYTE;
-    msg_[2] = size_;
+    msg_[MsgStructure::START_BYTE0_IDX] = MsgStructure::START_BYTE;
+    msg_[MsgStructure::START_BYTE1_IDX] = MsgStructure::START_BYTE;
+    msg_[MsgStructure::TASK_IDX] = task_;
 }
 
 
@@ -77,6 +78,12 @@ void Msg::set_checksum(uint8_t checksum) {
 }
 
 
+void Msg::set_task(uint8_t task) {
+    task_ = task;
+    msg_[MsgStructure::TASK_IDX] = task_;
+}
+
+
 size_t Msg::size() {
     return size_;
 }
@@ -89,6 +96,11 @@ uint8_t Msg::checksum() {
 
 uint8_t* Msg::msg() {
     return msg_;
+}
+
+
+uint8_t Msg::task() {
+    return task_;
 }
 
 

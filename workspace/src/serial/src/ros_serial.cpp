@@ -6,7 +6,7 @@ RosSerial::RosSerial() : Node("ros_serial") {
     using std::placeholders::_1;
     publisher_ = this->create_publisher<std_msgs::msg::Int64MultiArray>("/serial/pub", 10);
     timer_ = this->create_wall_timer(100ms, std::bind(&RosSerial::timerCallback, this));
-    subscription_ = this->create_subscription<std_msgs::msg::Float32MultiArray>("/pid", 10, std::bind(&RosSerial::subscriptionCallback, this, _1));
+    subscription_ = this->create_subscription<std_msgs::msg::Float32MultiArray>("/pid_regulator/pid", 10, std::bind(&RosSerial::subscriptionCallback, this, _1));
 }
 
 
@@ -49,20 +49,16 @@ Msg RosSerial::createSerialMsg(std_msgs::msg::Float32MultiArray ros_msg, std::ve
 }
 
 
-void RosSerial::subscriptionCallback(const std_msgs::msg::Float32MultiArray & msg) {
-    float kp = msg.data[0];
-    float kd = msg.data[1];
-    float ki = msg.data[2];
+void RosSerial::subscriptionCallback(const std_msgs::msg::Float32MultiArray & ros_msg) {
+    Msg serial_msg = createSerialMsg(ros_msg, Msgs::pid_idx);
 
-    Msg serial_msg = createSerialMsg(msg, Msgs::pid_idx);
-
-    auto n = createRosMsg(&serial_msg, Msgs::pid_idx);
-
-    kp = msg.data[0];
-    kd = msg.data[1];
-    ki = msg.data[2];
+    float kp = ros_msg.data[0];
+    float kd = ros_msg.data[1];
+    float ki = ros_msg.data[2];
 
     std::cout << "kp = " << kp << "; kd = " << kd << "; ki = " << ki << ";" << std::endl;
+
+    serial_msg.set_task(Tasks::SET_PID);
 
     Connect::sendCommand(&serial_msg);
 }

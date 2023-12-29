@@ -28,7 +28,7 @@ private:
     Msg createSerialMsg(std_msgs::msg::Float32MultiArray ros_msg, std::vector<size_t> data_idx);
 
     void timerCallback();
-    void subscriptionCallback(const std_msgs::msg::Float32MultiArray & msg);     
+    void subscriptionCallback(const std_msgs::msg::Float32MultiArray & ros_msg);     
 };
 
 

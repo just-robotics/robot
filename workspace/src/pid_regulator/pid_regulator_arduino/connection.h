@@ -2,6 +2,7 @@
 #define PID_REGULATOR_CONNECTION_H
 
 
+#include "blink.h"
 #include "config.h"
 
 
@@ -20,8 +21,7 @@ namespace Connection {
     void setConnection();
     void int64_to_uint8arr(int64_t number, uint8_t* output);
     float uint8arr_to_float(uint8_t* data);
-
-    callback ping_callback = [] () {sendMessage(ping_msg, PING_MSG_SIZE);};
+    callback* callbacks;
 }
 
 
@@ -62,6 +62,7 @@ uint8_t Connection::calcMessageCheckSum(uint8_t* message, uint64_t size) {
 void Connection::sendMessage(uint8_t* message, uint64_t size) {
     message[START_BYTE0_CELL] = START_BYTE;
     message[START_BYTE1_CELL] = START_BYTE;
+    message[LENGTH_CELL] = size;
     message[size-1] = calcMessageCheckSum(message, size);
 
     for (int cell = START_BYTE0_CELL; cell < size; cell++) {
@@ -72,13 +73,13 @@ void Connection::sendMessage(uint8_t* message, uint64_t size) {
 
 bool Connection::receiveCommand(uint64_t size, callback cb) {
     uint8_t command[size];
-    if (Serial.available() > size) {
+    if (Serial.available() > 0) {
         command[START_BYTE0_CELL] = Serial.read();
         command[START_BYTE1_CELL] = Serial.read();
         if (command[START_BYTE0_CELL] == START_BYTE && command[START_BYTE1_CELL] == START_BYTE) {
             for (int idx = START_BYTE1_CELL + 1; idx < size; idx++) {
                 command[idx] = Serial.read();
-            }
+            }            
             if (!calcCommandCheckSum(command, size)) {
                 cb(command, size);
                 return true;
@@ -91,7 +92,7 @@ bool Connection::receiveCommand(uint64_t size, callback cb) {
 
 void Connection::setConnection() {
     while (true) {
-      if (receiveCommand(PING_CMD_SIZE, ping_callback)) {
+      if (receiveCommand(PING_CMD_SIZE, callbacks[PING_CALLBACK])) {
           return; 
       }
     }
