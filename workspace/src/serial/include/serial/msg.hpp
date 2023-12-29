@@ -11,8 +11,9 @@
 
 namespace MsgStructure {
     const uint8_t START_BYTE = 64;
-    const uint8_t START_BYTE0_IDX = 0;
-    const uint8_t START_BYTE1_IDX = 1;
+    const size_t START_BYTE0_IDX = 0;
+    const size_t START_BYTE1_IDX = 1;
+    const size_t LENGTH_IDX = 2;
 }
 
 
@@ -45,8 +46,11 @@ public:
 
 
 namespace Msgs {
-    inline std::vector<size_t> pose_target_idx = {2, 11, 20};
+    inline std::vector<size_t> pose_target_idx = {3, 12, 21};
     inline std::vector<size_t> pose_target_sz = {9, 9, 9};
+
+    inline std::vector<size_t> pid_idx = {3, 7, 11};
+    inline std::vector<size_t> pid_sz = {4, 4, 4};
 }
 
 

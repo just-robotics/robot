@@ -7,6 +7,7 @@ Msg::Msg(size_t size) {
     memset(msg_, 0, size_);
     msg_[0] = MsgStructure::START_BYTE;
     msg_[1] = MsgStructure::START_BYTE;
+    msg_[2] = size_;
 }
 
 

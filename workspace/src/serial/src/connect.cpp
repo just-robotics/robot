@@ -3,7 +3,6 @@
 
 bool Connect::openArduino() {
     if (Arduino == -1) {
-        std::cout << "HERE\n";
         return false;
     }
 
@@ -111,11 +110,11 @@ void Connect::delay(size_t ms) {
 
 bool Connect::setConnection() {
     if (!openArduino()) {
-        std::cout << "Unable to connect" << std::endl;
+        std::cout << "unable to connect" << std::endl;
         return false;
     }
 
-    Msg ping_cmd(3);
+    Msg ping_cmd(PING_CMD_SIZE);
 
     auto start_timer = std::chrono::system_clock::now();
     while (!is_feedback_correct) {

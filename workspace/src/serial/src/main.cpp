@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "../include/serial/connect.hpp"
-#include "../include/serial/serial_publisher.hpp"
+#include "../include/serial/ros_serial.hpp"
 
 
 int main(int argc, char** argv) {

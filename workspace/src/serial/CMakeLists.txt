@@ -15,7 +15,8 @@ add_executable(${PROJECT_NAME}
     src/connect.cpp
     include/serial/msg.hpp
     src/msg.cpp
-    include/serial/serial_publisher.hpp
+    include/serial/ros_serial.hpp
+    src/ros_serial.cpp
 )
 
 ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs)
