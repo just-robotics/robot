@@ -2,13 +2,67 @@
 #define PID_REGULATOR_PID_H
 
 
-#include <stdint.h>
-
-#include "blink.h"
-#include "connection.h"
 #include "config.h"
 
 
+class Pid {
+private:
+    float kp_;
+    float ki_;
+    float kd_;
+
+    uint64_t prev_time_;
+    
+    float e_prev_;
+    float e_integral_;
+
+public:
+    Pid(float kp=KP, float ki=KI, float kd=KD);
+
+    void reset();
+    void set_target(int64_t target);
+    float pid(int64_t pose, int64_t target);
+};
+
+
+Pid::Pid(float kp, float ki, float kd) {
+    kp_ = kp;
+    ki_ = ki;
+    kd_ = kd;
+
+    reset();
+}
+
+
+void Pid::reset() {
+    prev_time_ = 0;
+    e_prev_ = 0;
+    e_integral_ = 0;
+}
+
+
+float Pid::pid(int64_t pose, int64_t target) {    
+    uint64_t current_time = micros();
+
+    float dt = (float)(current_time - prev_time_) / 1.0e6;
+    prev_time_ = current_time;
+
+    int64_t e = pose - target;
+
+    float P = float(e);
+    e_integral_ += e * dt;
+    float I = e_integral_;
+    float D = (e - e_prev_) / dt;
+
+    e_prev_ = e;
+
+    float u = (kp_ * P + ki_ * I + kd_ * D);
+
+    return u;
+}
+
+
+/*
 namespace Pid {
     uint64_t prev_time = 0;
     
@@ -41,18 +95,19 @@ void Pid::reset() {
 }
 
 
-void Pid::readEncoder() {
-    int b = digitalRead(ENCB);
+void readEncoder(int encb, int64_t* pose) {
+    int b = digitalRead(encb);
+    int k = (encb == MOTOR_0_ENCB || encb == MOTOR_2_ENCB) ? 1 : -1;
     if (b > 0) {
-        pose++;
+        *pose = *pose + k;
     }
     else {
-        pose--;
+        *pose = *pose - k;
     }
 }
 
 
-void Pid::setMotor(int dir, int pwm) {
+void Pid::setMotor(Motor m) {
     analogWrite(PWM_PIN, pwm);
     if (dir == 1) {
         digitalWrite(B_PIN, LOW);
@@ -98,14 +153,14 @@ void Pid::setPidVariables(uint8_t* data) {
 
     Blink::blink(true);
 }
-
-
+*/
+/*
 void Pid::setPoseVariables(uint8_t* data) {
     Connection::int64_to_uint8arr((int64_t)kp, data + POSE_IDX);
     Connection::int64_to_uint8arr((int64_t)kd, data + TARGET_IDX);
     Connection::int64_to_uint8arr((int64_t)ki, data + U_IDX);
 }
-
+*/
 /*
 void Pid::setPoseVariables(uint8_t* data) {    
     Connection::int64_to_uint8arr(pose, data + POSE_IDX);
