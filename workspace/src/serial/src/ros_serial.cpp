@@ -14,7 +14,7 @@ std_msgs::msg::Int64MultiArray RosSerial::createRosMsg(Msg* serial_msg, std::vec
     auto ros_msg = std_msgs::msg::Int64MultiArray();
 
     for (size_t i = 0; i < data_idx.size(); i++) {
-        int64_t data = Connect::uint8arr_to_int64(serial_msg->msg() + data_idx[i]);
+        int64_t data = serial::uint8arr_to_int64(serial_msg->msg() + data_idx[i]);
         ros_msg.data.push_back(data);
     }
 
@@ -23,8 +23,8 @@ std_msgs::msg::Int64MultiArray RosSerial::createRosMsg(Msg* serial_msg, std::vec
 
 
 void RosSerial::timerCallback() {
-    Msg msg = Connect::receiveMessage(MsgSizes::POSE);
-    if (Connect::checkFeedback()) {
+    Msg msg = serial::receiveMessage(MsgSizes::POSE);
+    if (serial::checkFeedback()) {
         auto ros_message = createRosMsg(&msg, Msgs::pose_idx);
         publisher_->publish(ros_message);
 #if 0
@@ -44,7 +44,7 @@ Msg RosSerial::createSerialMsg(std_msgs::msg::Float32MultiArray ros_msg, std::ve
 
     for (size_t i = 0; i < data_idx.size(); i++) {
         float data = ros_msg.data[i];
-        Connect::float_to_uint8arr(data, serial_msg.msg() + data_idx[i]);
+        serial::float_to_uint8arr(data, serial_msg.msg() + data_idx[i]);
     }
 
     return serial_msg;
@@ -62,5 +62,5 @@ void RosSerial::subscriptionCallback(const std_msgs::msg::Float32MultiArray & ro
 
     serial_msg.set_task(Tasks::SET_PID);
 
-    Connect::sendCommand(&serial_msg);
+    serial::sendCommand(&serial_msg);
 }

@@ -11,8 +11,8 @@ find_package(std_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
-    include/serial/connect.hpp
-    src/connect.cpp
+    include/serial/serial.hpp
+    src/serial.cpp
     include/serial/msg.hpp
     src/msg.cpp
     include/serial/ros_serial.hpp
