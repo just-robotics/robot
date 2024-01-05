@@ -36,10 +36,11 @@ ArduinoPublisher::ArduinoPublisher() : Node("serial_publisher") {
 
 
 void ArduinoPublisher::callback(const std_msgs::msg::Int64MultiArray & msg) const {
-        int64_t pose = msg.data[0];
-        int64_t target = msg.data[1];
-        int64_t u = msg.data[2];
-
+        int64_t pose0 = msg.data[0];
+        int64_t pose1 = msg.data[1];
+        int64_t pose2 = msg.data[2];
+        int64_t pose3 = msg.data[3];
+/*
         auto pose_msg = std_msgs::msg::Int64();
         auto target_msg = std_msgs::msg::Int64();
         auto u_msg = std_msgs::msg::Int64();
@@ -51,8 +52,8 @@ void ArduinoPublisher::callback(const std_msgs::msg::Int64MultiArray & msg) cons
         pose_publisher_->publish(pose_msg);
         target_publisher_->publish(target_msg);
         u_publisher_->publish(u_msg);
-
-        std::cout << pose << " " << target << " " << u << std::endl;
+*/
+        std::cout << pose0 << " " << pose1 << " " << pose2 << " " << pose3 << std::endl;
 }
 
 
