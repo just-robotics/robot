@@ -86,7 +86,7 @@ namespace MsgSizes {
 
 namespace Msgs {
     inline std::vector<size_t> pose_idx = {3, 12, 21, 30};
-    inline std::vector<size_t> pose_sz = {9, 9, 9};
+    inline std::vector<size_t> pose_sz = {9, 9, 9, 9};
 
     inline std::vector<size_t> pid_idx = {3, 7, 11};
     inline std::vector<size_t> pid_sz = {4, 4, 4};

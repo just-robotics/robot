@@ -69,29 +69,76 @@ uint8_t Connect::calcMessageCheckSum(uint8_t buffer[], size_t size) {
 void Connect::sendCommand(Msg* msg) {
     calcCommandCheckSum(msg);
     write(Arduino, msg->msg(), msg->size());
-    if (msg->size() != PING_CMD_SIZE && msg->task() == Tasks::PING) {
+    if (msg->size() != MsgSizes::PING && msg->task() == Tasks::PING) {
         std::cout << "WARNING: NON_PING command was sent with PING task" << std::endl;
     }
 }
 
 
+#define SIZE_FROM_SERIAL 0
+#if not SIZE_FROM_SERIAL
 Msg Connect::receiveMessage(size_t size) {
-    uint8_t* buf = new uint8_t[size];
-    read(Arduino, buf, size);
+    Msg msg(size);
+    read(Arduino, msg.msg(), size);
 
     is_feedback_correct = false;
 
-    if (buf[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && buf[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
+    msg.print();
+
+    if (msg[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && msg[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
         
-        if (!calcMessageCheckSum(buf, size)) {
+        if (!calcMessageCheckSum(msg.msg(), size)) {
             is_feedback_correct = true;
-            return Msg(size, buf);
+            std::cout << "OK" << std::endl;
+            return msg;
         }
-        
     }
-    delete[] buf;
     return Msg(0);
 }
+
+
+#else // receiveMessage with getting size from serial
+Msg Connect::receiveMessage(size_t size) {
+    uint8_t st[2];
+    uint8_t task;
+    read(Arduino, st, 2);
+
+    std::cout << (int)st[0] << " " << (int)st[1] << std::endl;
+
+    Msg msg;
+
+    if (st[0] == 64 && st[1] == 64) {
+        std::cout << "OK" << std::endl;
+        read(Arduino, &task, 1);
+        std::cout << (int)task << std::endl;
+        if (task == Tasks::PING) {
+            std::cout << "TASK_OK" << std::endl;
+        }
+        msg = Msg(4);
+        //msg.set_task(Tasks::PING);
+        // uint8_t c;
+        // read(Arduino, &c, 1);
+        // msg.set_checksum(c);
+        // msg.msg()[0] = 64;
+        // msg.msg()[1] = 64;
+    }
+
+    is_feedback_correct = false;
+
+
+    msg.print();
+
+    // if (msg[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && msg[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
+        
+    //     if (!calcMessageCheckSum(msg.msg(), size)) {
+    //         is_feedback_correct = true;
+    //         std::cout << "OK" << std::endl;
+    //         return msg;
+    //     }
+    // }
+    return Msg(0);
+}
+#endif
 
 
 bool Connect::checkFeedback() {
@@ -117,14 +164,14 @@ bool Connect::setConnection() {
         return false;
     }
 
-    Msg ping_cmd(PING_CMD_SIZE);
+    Msg ping_cmd(MsgSizes::PING);
 
     auto start_timer = std::chrono::system_clock::now();
     while (!is_feedback_correct) {
         auto end_timer = std::chrono::system_clock::now();
         if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(TIMER)) {
             sendCommand(&ping_cmd);
-            receiveMessage(PING_MSG_SIZE);
+            receiveMessage(MsgSizes::PING);
             start_timer = std::chrono::system_clock::now();
         }
     }
@@ -135,6 +182,9 @@ bool Connect::setConnection() {
 
 
 void Connect::disconnectArduino() {
+    Msg msg(MsgSizes::DISCONNECT);
+    msg.set_task(Tasks::DISCONNECT);
+    sendCommand(&msg);
     close(Arduino);
     std::cout << "disconnected" << std::endl;
 }

@@ -15,16 +15,10 @@
 #include "msg.hpp"
 
 
-#define POSE_MSG_SIZE 31
-
-
 class Connect {
 private:
     static const size_t SERIAL_BAUDRATE = 2000000;
     static const uint8_t TIMER = 200;
-
-    static const uint8_t PING_MSG_SIZE = 4;
-    static const uint8_t PING_CMD_SIZE = 4;
 
     inline static int Arduino = open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_NONBLOCK);
     inline static bool is_feedback_correct = false;

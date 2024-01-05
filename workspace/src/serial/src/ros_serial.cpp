@@ -23,16 +23,18 @@ std_msgs::msg::Int64MultiArray RosSerial::createRosMsg(Msg* serial_msg, std::vec
 
 
 void RosSerial::timerCallback() {
-    Msg msg = Connect::receiveMessage(POSE_MSG_SIZE);
+    Msg msg = Connect::receiveMessage(MsgSizes::POSE);
     if (Connect::checkFeedback()) {
-        auto ros_message = createRosMsg(&msg, Msgs::pose_target_idx);
+        auto ros_message = createRosMsg(&msg, Msgs::pose_idx);
         publisher_->publish(ros_message);
+#if 0
+        int64_t pose0 = ros_message.data[0];
+        int64_t pose1 = ros_message.data[1];
+        int64_t pose2 = ros_message.data[2];
+        int64_t pose3 = ros_message.data[3];
 
-        // int64_t pose = ros_message.data[0];
-        // int64_t target = ros_message.data[1];
-        // int64_t u = ros_message.data[2];
-
-        // std::cout << pose << " " << target << " " << u << std::endl;
+        std::cout << "POSES: " << pose0 << " " << pose1 << " " << pose2 << " " << pose3 << std::endl;
+#endif
     }
 }
 

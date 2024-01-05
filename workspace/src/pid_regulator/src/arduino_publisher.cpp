@@ -29,31 +29,33 @@ private:
 
 ArduinoPublisher::ArduinoPublisher() : Node("serial_publisher") {
     subscription_ = this->create_subscription<std_msgs::msg::Int64MultiArray>("/serial/pub", 10, std::bind(&ArduinoPublisher::callback, this, _1));
+#if 0
     pose_publisher_ = this->create_publisher<std_msgs::msg::Int64>("/arduino/pose", 10);
     target_publisher_ = this->create_publisher<std_msgs::msg::Int64>("/arduino/target", 10);
     u_publisher_ = this->create_publisher<std_msgs::msg::Int64>("/arduino/u", 10);
+#endif
 }
 
 
 void ArduinoPublisher::callback(const std_msgs::msg::Int64MultiArray & msg) const {
-        int64_t pose0 = msg.data[0];
-        int64_t pose1 = msg.data[1];
-        int64_t pose2 = msg.data[2];
-        int64_t pose3 = msg.data[3];
-/*
-        auto pose_msg = std_msgs::msg::Int64();
-        auto target_msg = std_msgs::msg::Int64();
-        auto u_msg = std_msgs::msg::Int64();
+#if 0
+    auto pose_msg = std_msgs::msg::Int64();
+    auto target_msg = std_msgs::msg::Int64();
+    auto u_msg = std_msgs::msg::Int64();
 
-        pose_msg.data = pose;
-        target_msg.data = target;
-        u_msg.data = u;
+    pose_msg.data = pose;
+    target_msg.data = target;
+    u_msg.data = u;
 
-        pose_publisher_->publish(pose_msg);
-        target_publisher_->publish(target_msg);
-        u_publisher_->publish(u_msg);
-*/
-        std::cout << pose0 << " " << pose1 << " " << pose2 << " " << pose3 << std::endl;
+    pose_publisher_->publish(pose_msg);
+    target_publisher_->publish(target_msg);
+    u_publisher_->publish(u_msg);
+#endif
+
+    for (size_t i = 0; i < msg.data.size(); i++) {
+        std::cout << msg.data[i] << " ";
+    }
+    std::cout << std::endl;
 }
 
 
