@@ -11,7 +11,7 @@
 #include "std_msgs/msg/int64_multi_array.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
 
-#include "connect.hpp"
+#include "serial.hpp"
 
 
 class RosSerial : public rclcpp::Node {
