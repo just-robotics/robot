@@ -1,6 +1,12 @@
 #include "../include/serial/msg.hpp"
 
 
+Msg::Msg() {
+    size_ = 0;
+    task_= Tasks::PING;
+}
+
+
 Msg::Msg(size_t size) {
     size_ = size;
     task_ = Tasks::PING;
@@ -23,7 +29,9 @@ Msg::Msg(size_t size, const uint8_t* array) : Msg(size) {
 
 
 Msg::~Msg() {
-    delete[] msg_;
+    if (size_ != 0) {
+        delete[] msg_;
+    }
 }
 
 
@@ -104,15 +112,14 @@ uint8_t Msg::task() {
 }
 
 
-void Msg::print(bool is_int) {
+void Msg::print() {
+    if (size_ == 0) {
+        std::cout << "size = 0" << std::endl;
+        return;
+    }
     std::cout << "[";
     for (size_t i = 0; i < size_; i++) {
-        if (is_int) {
-            std::cout << static_cast<int>(msg_[i]);
-        }
-        else {
-            std::cout << msg_[i];
-        }
+        std::cout << static_cast<int>(msg_[i]);
         if (i != size_ - 1) {
             std::cout << ", ";
         }
