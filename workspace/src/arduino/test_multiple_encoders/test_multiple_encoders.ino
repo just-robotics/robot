@@ -1,12 +1,12 @@
-#define MOTOR_0_ENCA 0
-#define MOTOR_1_ENCA 1
-#define MOTOR_2_ENCA 2
-#define MOTOR_3_ENCA 3
+#define MOTOR_0_ENCA 18
+#define MOTOR_1_ENCA 19
+#define MOTOR_2_ENCA 20
+#define MOTOR_3_ENCA 21
 
-#define MOTOR_0_ENCB 4
-#define MOTOR_1_ENCB 7
-#define MOTOR_2_ENCB 8
-#define MOTOR_3_ENCB 11
+#define MOTOR_0_ENCB 14
+#define MOTOR_1_ENCB 15
+#define MOTOR_2_ENCB 16
+#define MOTOR_3_ENCB 17
 
 
 int64_t pose0 = 0;
