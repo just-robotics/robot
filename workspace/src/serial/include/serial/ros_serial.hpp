@@ -19,9 +19,11 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<std_msgs::msg::Int64MultiArray>::SharedPtr publisher_;
     rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr subscription_;
+    Serial* serial_;
 
 public:
     RosSerial();
+    ~RosSerial();
 
 private:
     std_msgs::msg::Int64MultiArray createRosMsg(Msg* serial_msg, std::vector<size_t> data_idx);
