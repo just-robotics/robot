@@ -38,13 +38,14 @@ void int64_to_uint8arr(int64_t number, uint8_t* output) {
 void setup() {
   Wire.begin(0);                // join I2C bus with address #0
   Wire.onRequest(requestEvent); // register event
-  
+  Serial.begin(9600);
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
 }
 
 void loop() {
   SonarSensor(PIN_TRIG, PIN_ECHO);
+  Serial.print(distance);
   int64_to_uint8arr((int64_t)distance, data);
   delay(100);
 }
