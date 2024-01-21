@@ -7,7 +7,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(robot_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
@@ -19,10 +19,10 @@ add_executable(${PROJECT_NAME}
     src/ros_serial.cpp
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs)
+ament_target_dependencies(${PROJECT_NAME} rclcpp robot_msgs)
 
 install(DIRECTORY
-    src include
+    src include launch config
     DESTINATION share/${PROJECT_NAME}
 )
 
