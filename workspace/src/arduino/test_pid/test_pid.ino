@@ -70,12 +70,12 @@ void readEncoder(int encb, int64_t* pose) {
 
 void setMotor(Motor m, int f_pin, int b_pin) {
     if (m.dir == 1) {
-        digitalWrite(b_pin, LOW);
-        digitalWrite(f_pin, m.pwm);
+        analogWrite(b_pin, LOW);
+        analogWrite(f_pin, m.pwm);
     }
     else {
-        digitalWrite(f_pin, LOW);
-        digitalWrite(b_pin, m.pwm);
+        analogWrite(f_pin, LOW);
+        analogWrite(b_pin, m.pwm);
     }
 }
 
