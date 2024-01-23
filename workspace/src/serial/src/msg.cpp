@@ -7,20 +7,18 @@ Msg::Msg() {
 }
 
 
-Msg::Msg(size_t size, bool fill_with_zeros) : size_{size} {
+Msg::Msg(size_t size) : size_{size} {
     data_ = new uint8_t[size_];
-    if (fill_with_zeros) {
-        memset(data_, 0, size_);
-    }
+    memset(data_, 0, size_);
 }
 
 
-Msg::Msg(size_t size, uint8_t* data) : Msg(size, false) {
+Msg::Msg(size_t size, uint8_t* data) : Msg(size) {
     std::copy(data, data + size_, data_);
 }
 
 
-Msg::Msg(size_t size, const std::initializer_list<uint8_t> array) : Msg(size, false) {
+Msg::Msg(size_t size, const std::initializer_list<uint8_t> array) : Msg(size) {
     std::copy(array.begin(), array.end(), data_);
 }
 
@@ -71,7 +69,7 @@ Msg& Msg::operator=(Msg&& other) {
 }
 
 
-uint8_t Msg::operator[](size_t idx) {
+uint8_t& Msg::operator[](size_t idx) {
     return data_[idx];
 }
 
@@ -93,14 +91,6 @@ void Msg::setChecksum(uint8_t checksum) {
 }
 
 
-void Msg::setTask(uint8_t task) {
-    if (size_ == 0) {
-        return;
-    }
-    data_[msg_structure::TASK_IDX] = task;
-}
-
-
 uint8_t* Msg::data() {
     return data_;
 }
@@ -108,14 +98,6 @@ uint8_t* Msg::data() {
 
 size_t Msg::size() {
     return size_;
-}
-
-
-uint8_t Msg::task() {
-    if (size_ == 0) {
-        throw("data is nullptr");
-    }
-    return data_[msg_structure::TASK_IDX];
 }
 
 

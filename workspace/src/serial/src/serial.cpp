@@ -1,8 +1,11 @@
 #include "../include/serial/serial.hpp"
 
 
-Serial::Serial(std::string name, size_t baudrate, std::string topic) {
-    fd_ = open(name.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+bool even = false;
+
+
+Serial::Serial(std::string port, size_t baudrate, size_t cmd_size, size_t msg_size) {
+    fd_ = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     tcgetattr(fd_, &serial_port_settings_);
 
@@ -23,9 +26,10 @@ Serial::Serial(std::string name, size_t baudrate, std::string topic) {
 
     tcsetattr(fd_, TCSANOW, &serial_port_settings_);
 
-    name_ = name;
+    port_ = port;
     baudrate_ = baudrate;
-    topic_ = topic;
+    cmd_size_ = cmd_size;
+    msg_size_ = msg_size;
 
     is_feedback_correct_ = false;
     if (fd_ != -1) {
@@ -89,30 +93,25 @@ void Serial::delay(size_t ms) {
 
 
 void Serial::send(Msg* msg) {
-    setChecksumForSend(msg);
+    if (msg->size() == 0) {
+        std::cout << "EMPTY" << std::endl;
+        return;
+    }
+    
     msg->setStartBytes();
+    setChecksumForSend(msg);
     std::cout << "msg ";
     msg->print();
-    uint8_t buf[] = {64, 64, 0, 246};
-    write(fd_, buf, 4);
-    if (msg->size() != msg_sizes::PING && msg->task() == tasks::PING) {
-        std::cout << "WARNING: NON_PING command was sent with PING task" << std::endl;
-    }
+    std::cout << "SIZE: " << msg->size() << std::endl;
+    write(fd_, msg->data(), msg->size());
 }
 
 
 Msg Serial::receive(size_t size) {
     Msg msg(size);
-    //uint8_t* buf = new uint8_t[size];
     read(fd_, msg.data(), size);
 
     is_feedback_correct_ = false;
-
-    // for (int i = 0; i < 4; i++) {
-    //     std::cout << "buf[" << i << "] = " << buf[i];
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
 
     msg.print();
 
@@ -123,6 +122,9 @@ Msg Serial::receive(size_t size) {
             return msg;
         }
     }
+    std::string nop = !even ? "NOP" : " NOP";
+    even = !even;
+    std::cout << nop << std::endl;
     return Msg(0);
 }
 
@@ -133,7 +135,6 @@ bool Serial::checkFeedback() {
 
 
 bool Serial::is_opened() {
-    std::cout << "fd = " << fd_ << std::endl;
     return (fd_ != -1 && is_opened_);
 }
 
@@ -144,14 +145,14 @@ bool Serial::connect() {
         return false;
     }
 
-    Msg ping_cmd(msg_sizes::PING);
+    Msg ping_cmd(cmd_size_);
     
     auto start_timer = std::chrono::system_clock::now();
     while (!is_feedback_correct_) {
         auto end_timer = std::chrono::system_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(CONNECT_TIMER_)) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(TIMER_)) {
             send(&ping_cmd);
-            receive(msg_sizes::PING);
+            receive(msg_size_);
             start_timer = std::chrono::system_clock::now();
         }
     }
@@ -162,9 +163,6 @@ bool Serial::connect() {
 
 
 void Serial::disconnect() {
-    Msg msg(msg_sizes::DISCONNECT);
-    msg.setTask(tasks::DISCONNECT);
-    send(&msg);
     close(fd_);
     is_opened_ = false;
     std::cout << "disconnected" << std::endl;
@@ -172,48 +170,31 @@ void Serial::disconnect() {
 
 
 void Serial::int64_to_uint8arr(int64_t number, uint8_t* output) {
-    uint8_t byte = 0x000000FF;
-
-    output[8] = number < 0 ? 0 : 1;
-    uint64_t u_number = abs(number);
-
-    output[0] = u_number & byte;
-    
-    for (int i = 1; i < 8; i++) {
-        u_number >>= 8;
-        output[i] = u_number & byte;
-    }
+    std::memcpy(output, &number, sizeof(int64_t));
 }
 
 
 int64_t Serial::uint8arr_to_int64(uint8_t* data) {
-    int64_t number = data[7];
-
-    for (int i = 6; i >= 0; i--) {
-        number <<= 8;
-        number = number | data[i];
-    }
-
-    number = data[8] == 1 ? number : -number;
-    
+    int64_t number;
+    std::memcpy(&number, data, sizeof(int64_t));
     return number;
 }
 
 
-void Serial::float_to_uint8arr(float f, uint8_t* data) {
-    memcpy(data, &f, sizeof(float));
+void Serial::float_to_uint8arr(float number, uint8_t* data) {
+    memcpy(data, &number, sizeof(float));
 }
 
 
 float Serial::uint8arr_to_float(uint8_t* data) {
-    float f;
-    memcpy(&f, data, sizeof(float));
-    return f;
+    float number;
+    memcpy(&number, data, sizeof(float));
+    return number;
 }
 
 
-std::string Serial::name() {
-    return name_;
+std::string Serial::port() {
+    return port_;
 }
 
 
@@ -222,6 +203,11 @@ size_t Serial::baudrate() {
 }
 
 
-std::string Serial::topic() {
-    return topic_;
+size_t Serial::cmd_size() {
+    return cmd_size_;
+}
+
+
+size_t Serial::msg_size() {
+    return msg_size_;
 }
