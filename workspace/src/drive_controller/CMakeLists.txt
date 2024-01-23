@@ -1,25 +1,23 @@
 cmake_minimum_required(VERSION 3.8)
-project(serial)
+project(drive_controller)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(robot_msgs REQUIRED)
 
-add_executable(${PROJECT_NAME}
-    src/main.cpp
-    include/serial/serial.hpp
-    src/serial.cpp
-    include/serial/msg.hpp
-    src/msg.cpp
-    include/serial/ros_serial.hpp
-    src/ros_serial.cpp
+add_executable(drive_controller
+    src/drive_controller.cpp
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp robot_msgs)
+ament_target_dependencies(drive_controller rclcpp geometry_msgs nav_msgs robot_msgs tf2 tf2_ros)
 
 install(DIRECTORY
     src include launch config
@@ -27,7 +25,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-    ${PROJECT_NAME}
+    drive_controller
     DESTINATION lib/${PROJECT_NAME}
 )
 

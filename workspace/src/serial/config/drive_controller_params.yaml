@@ -1,0 +1,8 @@
+serial:
+    ros__parameters:
+        port: "/dev/ttyACM0"     # arduino port
+        baudrate: 2000000        # baudrate for arduino
+        cmd_size: 19             # msg size from linux
+        msg_size: 51             # msg size from arduino
+        pub_topic: "/serial/pub" # topic name for arduino receiver
+        sub_topic: "/serial/sub" # topic name for arduino sender

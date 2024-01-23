@@ -1,0 +1,18 @@
+drive_controller:
+    ros__parameters:
+        odom_pub: "/odom"                # output odometry topic
+        cmd_vel_sub: "/cmd_vel"          # input cmd_vel topic
+        serial_pub: "/serial/sub"        # topic with motors velocities values in rad/s
+        serial_sub: "/serial/pub"        # topic with odometry poses in ticks and odometry velocities in rad/s
+        
+        r: 0.048                         # wheel radius
+        lx: 0.097                        # half of the distance between front wheel and rear wheel
+        ly: 0.107                        # half of the distance between front wheels
+        ticks: 206.26                    # number of ticks per one rotation
+        frame_id: "odom"                 # odom frame id
+        child_frame_id: "base_footprint" # child frame id for odom frame
+
+        pose_num: 4                      # number of poses in serial msg
+        pose_size: 8                     # size of each pose in serial msg
+        vel_num: 4                       # number of velocities in serial msg
+        vel_size: 4                      # size of each velocity in serial msg
