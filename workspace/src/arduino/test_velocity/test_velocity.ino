@@ -76,15 +76,10 @@ void setMotor(Motor m, int f_pin, int b_pin) {
 }
 
 
-Motor pid(int64_t pose, int64_t target) {    
-    uint64_t current_time = micros();
+Motor pid(int64_t pose, int64_t target, float dt) {    
+    float e = float(pose - target);
 
-    float dt = (float)(current_time - prev_time) / 1.0e6;
-    prev_time = current_time;
-
-    int64_t e = pose - target;
-
-    float P = float(e);
+    float P = e;
     float D = (e - e_prev) / dt;
     e_integral += e * dt;
     float I = e_integral;
