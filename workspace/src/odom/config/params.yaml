@@ -1,7 +1,0 @@
-odom:
-    ros__parameters:
-        r: 0.048                         # wheel radius
-        lx: 0.096                        # half of the distance between front wheel and rear wheel
-        ly: 0.212                        # half of the distance between front wheels
-        ticks: 206.26                    # number of ticks per one rotation
-        child_frame_id: "base_footprint" # child frame id for odom frame
