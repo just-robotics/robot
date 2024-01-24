@@ -21,7 +21,7 @@ private:
     Serial* serial_;
 
 public:
-    RosSerial();
+    RosSerial(std::string node_name);
     ~RosSerial();
 
 private:

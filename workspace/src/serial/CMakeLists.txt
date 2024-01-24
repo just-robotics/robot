@@ -9,8 +9,9 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(robot_msgs REQUIRED)
 
-add_executable(${PROJECT_NAME}
-    src/main.cpp
+include_directories(include)
+
+add_library(${PROJECT_NAME}
     include/serial/serial.hpp
     src/serial.cpp
     include/serial/msg.hpp
@@ -19,27 +20,22 @@ add_executable(${PROJECT_NAME}
     src/ros_serial.cpp
 )
 
-# add_executable(tof
-#     src/main.cpp
-#     include/serial/serial.hpp
-#     src/serial.cpp
-#     include/serial/msg.hpp
-#     src/msg.cpp
-#     src/tof.cpp
-# )
-
 ament_target_dependencies(${PROJECT_NAME} rclcpp robot_msgs)
-# ament_target_dependencies(tof rclcpp robot_msgs)
+
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 install(DIRECTORY
-    src include launch config
-    DESTINATION share/${PROJECT_NAME}
+    src launch config include/serial
+    DESTINATION include
 )
 
-install(TARGETS
-    ${PROJECT_NAME}
-    # tof
-    DESTINATION lib/${PROJECT_NAME}
+install(
+    TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
 )
 
 ament_package()
