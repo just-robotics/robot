@@ -20,7 +20,7 @@ add_executable(drive_controller
 ament_target_dependencies(drive_controller rclcpp geometry_msgs nav_msgs robot_msgs tf2 tf2_ros)
 
 install(DIRECTORY
-    src include launch config
+    src launch config
     DESTINATION share/${PROJECT_NAME}
 )
 
