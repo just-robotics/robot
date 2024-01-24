@@ -19,7 +19,17 @@ add_executable(${PROJECT_NAME}
     src/ros_serial.cpp
 )
 
+# add_executable(tof
+#     src/main.cpp
+#     include/serial/serial.hpp
+#     src/serial.cpp
+#     include/serial/msg.hpp
+#     src/msg.cpp
+#     src/tof.cpp
+# )
+
 ament_target_dependencies(${PROJECT_NAME} rclcpp robot_msgs)
+# ament_target_dependencies(tof rclcpp robot_msgs)
 
 install(DIRECTORY
     src include launch config
@@ -28,6 +38,7 @@ install(DIRECTORY
 
 install(TARGETS
     ${PROJECT_NAME}
+    # tof
     DESTINATION lib/${PROJECT_NAME}
 )
 

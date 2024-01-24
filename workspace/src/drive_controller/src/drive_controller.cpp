@@ -11,10 +11,15 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include "robot_msgs/msg/u_int8_vector.hpp"
 
-#define GLOBAL_VELS_NUM 3
 
-
+using namespace std::chrono_literals;
 using std::placeholders::_1;
+
+
+constexpr size_t GLOBAL_VELS_NUM = 3;
+constexpr size_t GLOBAL_POSES_NUM = 3;
+
+constexpr _2PI = 6.28;
 
 
 class DriveController : public rclcpp::Node {
@@ -30,6 +35,9 @@ private:
     double r_, lx_, ly_, ticks_;
     std::string frame_id_, child_frame_id_;
 
+    std::vector<float> prev_X_, prev_P_;
+    
+
 public:
     DriveController();
 
@@ -37,8 +45,11 @@ private:
     std::vector<float> calcForwardKinematics(std::vector<float> V);
     std::vector<float> calcInverseKinematics(std::vector<float> W);
 
-    std::vector<float> ticks2rads(std::vector<int64_t> P);
+    std::vector<float> ticks2rads(std::vector<int64_t> T);
+    std::vector<int64_t> rads2ticks(std::vector<float> P);
+
     std::vector<float> calcGlobalPose(std::vector<int64_t> P);
+    std::vector<int64_t> calcLocalPose(std::vector<float> X);
     
     void odomCallback(const robot_msgs::msg::UInt8Vector& msg);
     void cmdVelCallback(const geometry_msgs::msg::Twist& msg);
@@ -98,7 +109,10 @@ DriveController::DriveController() : Node("drive_controller") {
     serial_sub_ = this->create_subscription<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10, std::bind(&DriveController::odomCallback, this, _1));
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_sub_topic, 10, std::bind(&DriveController::cmdVelCallback, this, _1));
 
-    tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);\
+
+    prev_X_ = {0, 0, 0, 0};
+    prev_P_ = {0, 0, 0, 0};
 }
 
 
@@ -146,37 +160,78 @@ std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) 
 }
 
 
-std::vector<float> DriveController::ticks2rads(std::vector<int64_t> P) {
-    std::vector<float> R;
-    for (size_t i = 0; i < P.size(); i++) {
-        R.push_back(2 * 3.14 * P[i] / ticks_);
+std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
+    std::vector<float> P;
+    for (size_t i = 0; i < T.size(); i++) {
+        P.push_back(_2PI * T[i] / ticks_);
     }
 
-    return R;
+    return P;
  }
 
 
-std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> P) {
-    if (P.size() != pose_num_) {
+std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
+    std::vector<int64_t> T;
+    for (size_t i = 0; i < P.size(); i++) {
+        T.push_back(P[i] * ticks_ / _2PI);
+    }
+
+    return T;
+ }
+
+
+std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
+    if (T.size() != pose_num_) {
         RCLCPP_FATAL(this->get_logger(), "Wrong odom_poses_size");
         rclcpp::shutdown();
     }
 
-    std::vector<float> R = ticks2rads(P);
-
-    float p0 = R[0];
-    float p1 = R[1];
-    float p2 = R[2];
-    float p3 = R[3];
+    std::vector<float> P = ticks2rads(T);
 
     std::vector<float> X;
     X.resize(GLOBAL_VELS_NUM);
 
-    X[0] = (+p0 + p1 + p2 + p3) * r_ / 4;
-    X[1] = (-p0 + p1 + p2 - p3) * r_ / 4;
-    X[2] = (-p0 + p1 - p2 + p3) * r_ / 4 / (lx_ + ly_);
+    float dp0 = P[0] - prev_P_[0];
+    float dp1 = P[1] - prev_P_[1];
+    float dp2 = P[2] - prev_P_[2];
+    float dp3 = P[3] - prev_P_[3];
+
+    float dx = (+dp0 + dp1 + dp2 + dp3) * r_ / 4;
+    float dy = (-dp0 + dp1 + dp2 - dp3) * r_ / 4;
+    float dY = (-dp0 + dp1 - dp2 + dp3) * r_ / 4 / (lx_ + ly_);
+
+    X[0] = prev_X_[0] + dx * std::cos(prev_X_[2]) - dy * std::sin(prev_X_[2]);
+    X[1] = prev_X_[1] + dx * std::sin(prev_X_[2]) + dy * std::cos(prev_X_[2]);
+    X[2] = prev_X_[2] + dY;
+
+    prev_X_ = X;
+    prev_P_ = P;
 
     return X;
+}
+
+
+std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
+    if (X.size() != GLOBAL_POSES_NUM) {
+        RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
+        rclcpp::shutdown();
+    }
+
+    float x = X[0];
+    float y = X[1];
+    float z = X[2];
+
+    std::vector<float> P;
+    P.resize(vel_num_);
+
+    P[0] = (x - y - (lx_ + ly_) * z) / r_;
+    P[1] = (x + y + (lx_ + ly_) * z) / r_;
+    P[2] = (x + y - (lx_ + ly_) * z) / r_;
+    P[3] = (x - y + (lx_ + ly_) * z) / r_;
+
+    std::vector<int64_t> T = rads2ticks(P);
+
+    return T;
 }
 
 
@@ -188,9 +243,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
         int64_t pose;
         std::memcpy(&pose, msg.data.data() + i * pose_size_, pose_size_);
         P.push_back(pose);
-        std::cout << pose << " ";
     }
-    std::cout << std::endl;
 
     for (size_t i = 0; i < pose_num_; i++) {
         float w;
@@ -213,13 +266,13 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     tf2::Quaternion q;
     q.setRPY(0, 0, X[2]);
 
-    std::vector<float> V = calcInverseKinematics(W);
-
     odom.pose.pose.orientation.x = q.x();
     odom.pose.pose.orientation.y = q.y();
     odom.pose.pose.orientation.z = q.z();
     odom.pose.pose.orientation.w = q.w();
 /*
+    std::vector<float> V = calcInverseKinematics(W);
+
     odom.twist.twist.linear.x = V[0];
     odom.twist.twist.linear.y = V[1];
     odom.twist.twist.linear.z = 0;
@@ -238,7 +291,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
 
     transform.transform.translation.x = odom.pose.pose.position.x;
     transform.transform.translation.y = odom.pose.pose.position.y;
-    transform.transform.translation.z = 0.0;
+    transform.transform.translation.z = odom.pose.pose.position.z;
 
     transform.transform.rotation.x = odom.pose.pose.orientation.x;
     transform.transform.rotation.y = odom.pose.pose.orientation.y;
@@ -246,8 +299,6 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     transform.transform.rotation.w = odom.pose.pose.orientation.w;
 
     tf2_broadcaster_->sendTransform(transform);
-
-    //std::cout << "ODOM: " << V[0] << " " << V[1] << " " << V[2] << " " << W[0] << " " << W[1] << " " << W[2] << " " << W[3] << std::endl;
 }
 
 
@@ -268,8 +319,6 @@ void DriveController::cmdVelCallback(const geometry_msgs::msg::Twist& msg) {
     }
 
     serial_pub_->publish(serial_msg);
-
-    //std::cout << "CMD_VEL: " << V[0] << " " << V[1] << " " << V[2] << " " << W[0] << " " << W[1] << " " << W[2] << " " << W[3] << std::endl;
 }
 
 
