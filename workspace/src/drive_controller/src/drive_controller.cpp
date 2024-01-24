@@ -103,13 +103,13 @@ DriveController::DriveController() : Node("drive_controller") {
     RCLCPP_INFO(this->get_logger(), "vel_num: %ld", vel_num_);
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", vel_size_);
 
-    serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_pub_topic, 10);
+    serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10);
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
 
-    serial_sub_ = this->create_subscription<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10, std::bind(&DriveController::odomCallback, this, _1));
+    serial_sub_ = this->create_subscription<robot_msgs::msg::UInt8Vector>(serial_pub_topic, 10, std::bind(&DriveController::odomCallback, this, _1));
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_sub_topic, 10, std::bind(&DriveController::cmdVelCallback, this, _1));
 
-    tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);\
+    tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
     prev_X_ = {0, 0, 0, 0};
     prev_P_ = {0, 0, 0, 0};
