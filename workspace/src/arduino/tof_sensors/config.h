@@ -2,6 +2,8 @@
 #define TOF_CONFIG_H
 
 
+#define SERIAL true
+
 #define TOF_NUM 12
 #define XSHUTS_START_PIN 34
 #define START_ADDR 0x34
@@ -13,7 +15,7 @@
 #define START_BYTE1_IDX       1
 #define DATA_IDX              2
 #define DATA_SIZE             4
-#define CMD_SIZE              0
+#define CMD_SIZE              3
 #define MSG_SIZE             51
 
 

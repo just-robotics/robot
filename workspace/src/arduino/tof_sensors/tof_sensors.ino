@@ -5,9 +5,6 @@
 #include "config.h"
 
 
-#define SERIAL true
-
-
 VL53L1X sensors[TOF_NUM];
 
 int xshuts[TOF_NUM];
@@ -18,7 +15,7 @@ uint8_t msg[MSG_SIZE];
 
 bool is_tofs_found = false;
 
-uint64_t prev_time = millis();
+uint64_t prev_time = 0;
 
 
 void nop() {
@@ -49,7 +46,7 @@ void setup() {
 
     Wire.begin();
     Wire.beginTransmission(0x28);
-    Serial.begin (9600);
+    Serial.begin (SERIAL_BAUDRATE);
 
     for (uint8_t i = 0; i < TOF_NUM; i++) {
         digitalWrite(xshuts[i], HIGH);
@@ -93,16 +90,19 @@ void setup() {
     Serial.print ("Found ");
     Serial.print (tofs, DEC);
     Serial.println (" device(s).");
+#else
+    prev_time = millis();
 #endif
     is_tofs_found = tofs ? true : false;
 }
+
 
 void loop() {
     if (is_tofs_found) {
         for (int i = 0; i < TOF_NUM; i++) {
             data[i] = sensors[i].read();
 #if !SERIAL
-            Serial.print(data[i]);
+            Serial.print(u);
             Serial.print(" ");
 #endif
         }
@@ -111,10 +111,14 @@ void loop() {
 #else
         memset(msg, -1, MSG_SIZE);
         for (int i = 0; i < TOF_NUM; i++) {
-            serial::num2arr(data[i], msg + DATA_IDX + DATA_SIZE * i);
+            serial::num2arr(data[i] / 1000, msg + DATA_IDX + DATA_SIZE * i);
         }
 
-        serial::send(msg, MSG_SIZE);
+        int64_t curr_time = millis();
+        if (abs(curr_time - prev_time) > 1000) {
+            serial::send(msg, MSG_SIZE);
+            prev_time = curr_time;
+        }
 #endif
         delay(50);
     }
