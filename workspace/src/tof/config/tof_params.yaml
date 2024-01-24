@@ -1,0 +1,9 @@
+tof:
+    ros__parameters:
+        tof_pub: "/tof"               # output odometry topic
+        serial_pub: "/serial/tof/pub" # topic with tof_sensor data in uint8_t [m]
+
+        data_num: 12                  # number of data values in serial msg
+        data_size: 4                  # size of data
+
+        frame_id: "lidar"
