@@ -19,7 +19,7 @@ using std::placeholders::_1;
 constexpr size_t GLOBAL_VELS_NUM = 3;
 constexpr size_t GLOBAL_POSES_NUM = 3;
 
-constexpr _2PI = 6.28;
+constexpr float _2PI = 6.28;
 
 
 class DriveController : public rclcpp::Node {
