@@ -125,6 +125,7 @@ Msg Serial::receive(size_t size) {
     std::string nop = !even ? "NOP" : " NOP";
     even = !even;
     std::cout << nop << std::endl;
+    
     return Msg(0);
 }
 
