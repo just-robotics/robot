@@ -32,7 +32,7 @@ void setup() {
 
     Wire.begin();
     Wire.beginTransmission(0x29);
-    Serial.begin (9600);
+    Serial.begin (2000000);
 
     for (uint8_t i = 0; i < size; i++) {
         digitalWrite(xshuts[i], HIGH);
