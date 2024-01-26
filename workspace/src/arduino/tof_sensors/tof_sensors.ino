@@ -45,6 +45,7 @@ void setup() {
 #endif
 
     Wire.begin();
+    Wire.setClock(400000);
     Wire.beginTransmission(0x28);
     Serial.begin (SERIAL_BAUDRATE);
 
@@ -64,9 +65,9 @@ void setup() {
         sensors[i].setDistanceMode(VL53L1X::Long);
         sensors[i].setMeasurementTimingBudget(50000);
         sensors[i].startContinuous(50);
-        sensors[i].setTimeout(100);
+        sensors[i].setTimeout(500);
     }
-  
+
     Serial.println ("I2C scanner. Scanning ...");
     int tofs = 0;
 
@@ -96,13 +97,16 @@ void setup() {
     is_tofs_found = tofs ? true : false;
 }
 
-
+int64_t t__ = 0;
 void loop() {
+    Serial.println((int)(millis() - t__));
+    t__ = millis();
     if (is_tofs_found) {
         for (int i = 0; i < TOF_NUM; i++) {
-            data[i] = sensors[i].read();
+            sensors[i].read();
+            data[i] = sensors[i].ranging_data.range_mm;
 #if !SERIAL
-            Serial.print(u);
+            Serial.print(data[i]);
             Serial.print(" ");
 #endif
         }
@@ -115,11 +119,10 @@ void loop() {
         }
 
         int64_t curr_time = millis();
-        if (abs(curr_time - prev_time) > 1000) {
+        if (abs(curr_time - prev_time) > TIMER) {
             serial::send(msg, MSG_SIZE);
             prev_time = curr_time;
         }
 #endif
-        delay(50);
     }
 }

@@ -10,6 +10,7 @@
 
 #define SERIAL_BAUDRATE 2000000
 #define START_BYTE           64
+#define TIMER               100
 
 #define START_BYTE0_IDX       0
 #define START_BYTE1_IDX       1

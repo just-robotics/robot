@@ -68,18 +68,16 @@ void Tof::callback(const robot_msgs::msg::UInt8Vector& msg) {
     laser_scan.header.stamp = this->get_clock()->now();
 
     laser_scan.angle_min = 0;
-    laser_scan.angle_max = 0;
-    laser_scan.angle_increment = 0;
+    laser_scan.angle_max = 3.14;
+    laser_scan.angle_increment = 3.14 / 12;
 
-    laser_scan.time_increment = 0;
+    laser_scan.time_increment = 0.05;
+    laser_scan.scan_time = 0.6;
 
-    laser_scan.scan_time = 0;
-
-    laser_scan.range_min = 0;
-    laser_scan.range_max = 0;
+    laser_scan.range_min = 0.04;
+    laser_scan.range_max = 4.00;
 
     laser_scan.ranges = data;
-    laser_scan.intensities = {};
 
     tof_pub_->publish(laser_scan);
 }

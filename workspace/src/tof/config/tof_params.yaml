@@ -6,4 +6,4 @@ tof:
         data_num: 12                  # number of data values in serial msg
         data_size: 4                  # size of data
 
-        frame_id: "lidar"
+        frame_id: "tof"
