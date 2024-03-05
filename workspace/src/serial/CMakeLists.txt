@@ -25,7 +25,7 @@ ament_target_dependencies(${PROJECT_NAME} rclcpp robot_msgs)
 ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 install(DIRECTORY
-    src launch config include/serial
+    src include/serial
     DESTINATION include
 )
 

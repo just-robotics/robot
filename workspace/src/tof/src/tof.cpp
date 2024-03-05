@@ -57,6 +57,7 @@ void Tof::callback(const robot_msgs::msg::UInt8Vector& msg) {
     for (size_t i = 0; i < data_num_; i++) {
         float d;
         std::memcpy(&d, msg.data.data() + i * data_size_, data_size_);
+        d += 0.055; 
         std::cout << d << " ";
         data.push_back(d);
     }
@@ -68,8 +69,8 @@ void Tof::callback(const robot_msgs::msg::UInt8Vector& msg) {
     laser_scan.header.stamp = this->get_clock()->now();
 
     laser_scan.angle_min = 0;
-    laser_scan.angle_max = 3.14;
-    laser_scan.angle_increment = 3.14 / 12;
+    laser_scan.angle_max = 6.28;
+    laser_scan.angle_increment = 6.28 / 12;
 
     laser_scan.time_increment = 0.05;
     laser_scan.scan_time = 0.6;

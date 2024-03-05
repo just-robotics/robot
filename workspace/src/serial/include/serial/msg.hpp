@@ -62,8 +62,8 @@ namespace msg_sizes {
 
 
 namespace serial_msgs {
-    inline std::vector<size_t> pose_idx = {2, 10, 18, 26, 34, 38, 42, 46};
-    inline std::vector<size_t> pose_sz = {8, 8, 8, 8, 4, 4, 4, 4};
+    inline std::vector<size_t> pose_idx = {2, 10, 18, 26, 34, 38, 42, 46, 50, 54, 58, 62};
+    inline std::vector<size_t> pose_sz = {8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4, 4};
 
     inline std::vector<size_t> pid_idx = {3, 7, 11};
     inline std::vector<size_t> pid_sz = {4, 4, 4};

@@ -9,6 +9,8 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/int64.hpp>
 #include "robot_msgs/msg/u_int8_vector.hpp"
 
 
@@ -29,9 +31,12 @@ private:
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
+    rclcpp::Publisher<std_msgs::msg::Int64>::SharedPtr pose_pub_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr target_pub_;
+
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf2_broadcaster_;
 
-    size_t pose_num_, pose_size_, vel_num_, vel_size_;
+    size_t pose_num_, pose_size_, vel_num_, vel_size_, target_num_, target_size_;
     double r_, lx_, ly_, ticks_;
     std::string frame_id_, child_frame_id_;
 
@@ -71,6 +76,8 @@ DriveController::DriveController() : Node("drive_controller") {
     this->declare_parameter("pose_size", 0);
     this->declare_parameter("vel_num", 0);
     this->declare_parameter("vel_size", 0);
+    this->declare_parameter("target_num", 0);
+    this->declare_parameter("target_size", 0);
 
     std::string odom_pub_topic = this->get_parameter("odom_pub").as_string();
     std::string cmd_vel_sub_topic = this->get_parameter("cmd_vel_sub").as_string();
@@ -86,6 +93,8 @@ DriveController::DriveController() : Node("drive_controller") {
     pose_size_ = this->get_parameter("pose_size").as_int();
     vel_num_ = this->get_parameter("vel_num").as_int();
     vel_size_ = this->get_parameter("vel_size").as_int();
+    target_num_ = this->get_parameter("target_num").as_int();
+    target_size_ = this->get_parameter("target_size").as_int();
 
     RCLCPP_INFO(this->get_logger(), "serial_pub_topic: '%s'", serial_pub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "serial_sub_topic: '%s'", serial_sub_topic.c_str());
@@ -102,9 +111,14 @@ DriveController::DriveController() : Node("drive_controller") {
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", pose_size_);
     RCLCPP_INFO(this->get_logger(), "vel_num: %ld", vel_num_);
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", vel_size_);
+    RCLCPP_INFO(this->get_logger(), "vel_num: %ld", target_num_);
+    RCLCPP_INFO(this->get_logger(), "vel_size: %ld", target_size_);
 
     serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10);
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
+
+    pose_pub_ = this->create_publisher<std_msgs::msg::Int64>("/dbg/pose", 10);
+    target_pub_ = this->create_publisher<std_msgs::msg::Float32>("/dbg/target", 10);
 
     serial_sub_ = this->create_subscription<robot_msgs::msg::UInt8Vector>(serial_pub_topic, 10, std::bind(&DriveController::odomCallback, this, _1));
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_sub_topic, 10, std::bind(&DriveController::cmdVelCallback, this, _1));
@@ -238,6 +252,7 @@ std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
 void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     std::vector<int64_t> P;
     std::vector<float> W;
+    std::vector<float> T;
 
     for (size_t i = 0; i < pose_num_; i++) {
         int64_t pose;
@@ -250,6 +265,23 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
         std::memcpy(&w, msg.data.data() + pose_num_ * pose_size_ + i * vel_size_, vel_size_);
         W.push_back(w);
     }
+
+    for (size_t i = 0; i < target_num_; i++) {
+        float t;
+        std::memcpy(&t, msg.data.data() + pose_num_ * pose_size_ + vel_num_ * vel_size_ + i * target_size_, target_size_);
+        T.push_back(t);
+        std::cout << "TARGETS: " << T[i] << " ";
+    }
+    std::cout << std::endl;
+
+    auto pose_msg = std_msgs::msg::Int64();
+    auto target_msg = std_msgs::msg::Float32();
+
+    pose_msg.data = P[0];
+    target_msg.data = T[0];
+
+    pose_pub_->publish(pose_msg);
+    target_pub_->publish(target_msg);
 
     auto odom = nav_msgs::msg::Odometry();
 

@@ -30,7 +30,7 @@ namespace serial {
 
     void connect();
 
-    void send_poses(int64_t* poses, float* vel);
+    void send_data(int64_t* poses, float* vels, float* targets);
 }
 
 
@@ -126,17 +126,22 @@ void serial::connect() {
 }
 
 
-void serial::send_poses(int64_t* poses, float* vel) {
+void serial::send_data(int64_t* poses, float* vels, float* targets) {
     uint8_t data[MSG_SIZE];
     num2arr(poses[0], data + POSE0_IDX);
     num2arr(poses[1], data + POSE1_IDX);
     num2arr(poses[2], data + POSE2_IDX);
     num2arr(poses[3], data + POSE3_IDX);
 
-    num2arr(vel[0], data + VEL0_IDX);
-    num2arr(vel[1], data + VEL1_IDX);
-    num2arr(vel[2], data + VEL2_IDX);
-    num2arr(vel[3], data + VEL3_IDX);
+    num2arr(vels[0], data + VEL0_IDX);
+    num2arr(vels[1], data + VEL1_IDX);
+    num2arr(vels[2], data + VEL2_IDX);
+    num2arr(vels[3], data + VEL3_IDX);
+
+    num2arr(targets[0], data + TARGET0_IDX);
+    num2arr(targets[1], data + TARGET1_IDX);
+    num2arr(targets[2], data + TARGET2_IDX);
+    num2arr(targets[3], data + TARGET3_IDX);
     
     send(data, MSG_SIZE);
 }

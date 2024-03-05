@@ -7,6 +7,7 @@
 const uint8_t MOTORS = 4;
 int64_t poses[MOTORS];
 float velocities[MOTORS];
+float targets[MOTORS];
 
 bool state = false;
 
@@ -161,6 +162,10 @@ void Motor::spinMotors() {
     velocities[1] = motor1.velocity_;
     velocities[2] = motor2.velocity_;
     velocities[3] = motor3.velocity_;
+    targets[0] = motor0.target_;
+    targets[1] = motor1.target_;
+    targets[2] = motor2.target_;
+    targets[3] = motor3.target_;
 }
 
 

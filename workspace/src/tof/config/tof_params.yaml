@@ -1,6 +1,6 @@
 tof:
     ros__parameters:
-        tof_pub: "/tof"               # output odometry topic
+        tof_pub: "/scan"        # output topic
         serial_pub: "/serial/tof/pub" # topic with tof_sensor data in uint8_t [m]
 
         data_num: 12                  # number of data values in serial msg

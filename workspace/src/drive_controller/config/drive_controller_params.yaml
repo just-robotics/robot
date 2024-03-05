@@ -16,3 +16,5 @@ drive_controller:
         pose_size: 8                               # size of each pose in serial msg
         vel_num: 4                                 # number of velocities in serial msg
         vel_size: 4                                # size of each velocity in serial msg
+        target_num: 4                              # number of targets in serial msg
+        target_size: 4                             # size of each target in serial msg

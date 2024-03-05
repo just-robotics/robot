@@ -39,7 +39,8 @@
 
 #define CMD_SIZE             19
 #define CMD_DATA_SIZE        16
-#define MSG_SIZE             51
+#define MSG_SIZE             67
+
 
 #define KP_IDX                3
 #define KD_IDX                7
@@ -57,6 +58,10 @@
 #define VEL1_IDX             38
 #define VEL2_IDX             42
 #define VEL3_IDX             46
+#define TARGET0_IDX          50
+#define TARGET1_IDX          54
+#define TARGET2_IDX          58
+#define TARGET3_IDX          62
 
 #define CMD_VEL0_IDX          2
 #define CMD_VEL1_IDX          6

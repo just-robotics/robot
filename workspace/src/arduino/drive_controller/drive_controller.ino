@@ -36,7 +36,7 @@ void loop() {
     Motor::spinMotors();
 
     if (millis() - start_time >= 100) {
-        serial::send_poses(poses, velocities);
+        serial::send_data(poses, velocities, targets);
         start_time = millis();
     }
 }
