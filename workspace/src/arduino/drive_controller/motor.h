@@ -2,7 +2,7 @@
 #define DRIVE_CONTROLLER_MOTOR_H
 
 
-const uint8_t MOTORS = 4;
+const uint8_t MOTORS = 2;
 
 int64_t msg_poses[MOTORS];
 float msg_vels[MOTORS];
@@ -66,8 +66,6 @@ public:
 
 Motor motor0(MOTOR_0_ENCA, MOTOR_0_ENCB, MOTOR_0_F_PIN, MOTOR_0_B_PIN);
 Motor motor1(MOTOR_1_ENCA, MOTOR_1_ENCB, MOTOR_1_F_PIN, MOTOR_1_B_PIN);
-Motor motor2(MOTOR_2_ENCA, MOTOR_2_ENCB, MOTOR_2_F_PIN, MOTOR_2_B_PIN);
-Motor motor3(MOTOR_3_ENCA, MOTOR_3_ENCB, MOTOR_3_F_PIN, MOTOR_3_B_PIN);
 
 
 Motor::Motor(uint8_t enca, uint8_t encb, uint8_t f_pin, uint8_t b_pin) {
@@ -84,7 +82,7 @@ Motor::Motor(uint8_t enca, uint8_t encb, uint8_t f_pin, uint8_t b_pin) {
 
     reset();
 
-    encoder_inc_ = (encb_ == MOTOR_0_ENCB || encb_ == MOTOR_2_ENCB) ? 1 : -1;
+    encoder_inc_ = (encb_ == MOTOR_0_ENCB) ? 1 : -1;
 
     e_prev_ = 0;
     e_integral_ = 0;
@@ -107,8 +105,6 @@ void Motor::readEncoder(uint8_t encb, int64_t* pose, int8_t encoder_inc) {
 void Motor::init() {
     attachInterrupt(digitalPinToInterrupt(motor0.enca_), [] () {readEncoder(motor0.encb_, &motor0.pose_, motor0.encoder_inc_);}, RISING);
     attachInterrupt(digitalPinToInterrupt(motor1.enca_), [] () {readEncoder(motor1.encb_, &motor1.pose_, motor1.encoder_inc_);}, RISING);
-    attachInterrupt(digitalPinToInterrupt(motor2.enca_), [] () {readEncoder(motor2.encb_, &motor2.pose_, motor2.encoder_inc_);}, RISING);
-    attachInterrupt(digitalPinToInterrupt(motor3.enca_), [] () {readEncoder(motor3.encb_, &motor3.pose_, motor3.encoder_inc_);}, RISING);
 }
 
 
@@ -176,20 +172,12 @@ void Motor::spin() {
 void Motor::spinMotors() {
     motor0.spin();
     motor1.spin();
-    motor2.spin();
-    motor3.spin();
     msg_poses[0] = motor0.pose_;
     msg_poses[1] = motor1.pose_;
-    msg_poses[2] = motor2.pose_;
-    msg_poses[3] = motor3.pose_;
     msg_vels[0] = motor0.velocity_;
     msg_vels[1] = motor1.velocity_;
-    msg_vels[2] = motor2.velocity_;
-    msg_vels[3] = motor3.velocity_;
     msg_targets[0] = motor0.target_;
     msg_targets[1] = motor1.target_;
-    msg_targets[2] = motor2.target_;
-    msg_targets[3] = motor3.target_;
 }
 
 
@@ -212,8 +200,6 @@ void Motor::reset() {
 void Motor::resetMotors() {
     motor0.reset();
     motor1.reset();
-    motor2.reset();
-    motor3.reset();
 }
 
 
@@ -227,8 +213,6 @@ void Motor::callback(uint8_t* msg) {
     
     memcpy(cmd_vels + 0, msg + CMD_VEL0_IDX, CMD_VEL_SIZE);
     memcpy(cmd_vels + 1, msg + CMD_VEL1_IDX, CMD_VEL_SIZE);
-    memcpy(cmd_vels + 2, msg + CMD_VEL2_IDX, CMD_VEL_SIZE);
-    memcpy(cmd_vels + 3, msg + CMD_VEL3_IDX, CMD_VEL_SIZE);
     
     memcpy(&kp, msg + CMD_KP_IDX, sizeof(float));
     memcpy(&ki, msg + CMD_KI_IDX, sizeof(float));
@@ -236,8 +220,6 @@ void Motor::callback(uint8_t* msg) {
 
     motor0.set_cmd_vel(cmd_vels[0]);
     motor1.set_cmd_vel(cmd_vels[1]);
-    motor2.set_cmd_vel(cmd_vels[2]);
-    motor3.set_cmd_vel(cmd_vels[3]);
 }
 
 

@@ -48,7 +48,7 @@ private:
 
     size_t cmd_size_, pose_num_, pose_size_, vel_num_, vel_size_;
     size_t target_num_, target_size_;
-    double r_, lx_, ly_, ticks_;
+    double r_, l_, ticks_;
     std::string frame_id_, child_frame_id_;
 
     std::vector<float> reset_X_, reset_P_, prev_X_, prev_P_;
@@ -81,8 +81,7 @@ DriveController::DriveController() : Node("drive_controller") {
     this->declare_parameter("pid_sub", "");
     this->declare_parameter("reset_sub", "");
     this->declare_parameter("r", 0.0);
-    this->declare_parameter("lx", 0.0);
-    this->declare_parameter("ly", 0.0);
+    this->declare_parameter("l", 0.0);
     this->declare_parameter("ticks", 0.0);
     this->declare_parameter("frame_id", "");
     this->declare_parameter("child_frame_id", "");
@@ -105,8 +104,7 @@ DriveController::DriveController() : Node("drive_controller") {
     std::string pid_sub_topic = this->get_parameter("pid_sub").as_string();
     std::string reset_sub_topic = this->get_parameter("reset_sub").as_string();
     r_ = this->get_parameter("r").as_double();
-    lx_ = this->get_parameter("lx").as_double();
-    ly_ = this->get_parameter("ly").as_double();
+    l_ = this->get_parameter("l").as_double();
     ticks_ = this->get_parameter("ticks").as_double();
     frame_id_ = this->get_parameter("frame_id").as_string();
     child_frame_id_ = this->get_parameter("child_frame_id").as_string();
@@ -129,8 +127,7 @@ DriveController::DriveController() : Node("drive_controller") {
     RCLCPP_INFO(this->get_logger(), "pid_sub_topic: '%s'", pid_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "reset_sub_topic: '%s'", reset_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "r: %lf", r_);
-    RCLCPP_INFO(this->get_logger(), "lx: %lf", lx_);
-    RCLCPP_INFO(this->get_logger(), "ly: %lf", ly_);
+    RCLCPP_INFO(this->get_logger(), "lx: %lf", l_);
     RCLCPP_INFO(this->get_logger(), "ticks: %lf", ticks_);
     RCLCPP_INFO(this->get_logger(), "frame_id: '%s'", frame_id_.c_str());
     RCLCPP_INFO(this->get_logger(), "child_frame_id: '%s'", child_frame_id_.c_str());
@@ -160,8 +157,8 @@ DriveController::DriveController() : Node("drive_controller") {
 
     tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-    reset_X_ = {0, 0, 0, 0};
-    reset_P_ = {0, 0, 0, 0};
+    reset_X_ = {0, 0};
+    reset_P_ = {0, 0};
 
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
@@ -175,40 +172,39 @@ std::vector<float> DriveController::calcForwardKinematics(std::vector<float> V) 
     }
 
     float vx = V[0];
-    float vy = V[1];
     float wz = V[2];
 
     std::vector<float> W;
     W.resize(vel_num_);
 
-    W[0] = (vx - vy - (lx_ + ly_) * wz) / r_;
-    W[1] = (vx + vy + (lx_ + ly_) * wz) / r_;
-    W[2] = (vx + vy - (lx_ + ly_) * wz) / r_;
-    W[3] = (vx - vy + (lx_ + ly_) * wz) / r_;
+    W[0] = vx - wz * l_ / 2;
+    W[1] = vx + wz * l_ / 2;
 
     return W;
 }
 
 
 std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) {
-    if (W.size() != vel_num_) {
-        RCLCPP_FATAL(this->get_logger(), "Wrong odom_velocities_size");
-        rclcpp::shutdown();
-    }
+    // if (W.size() != vel_num_) {
+    //     RCLCPP_FATAL(this->get_logger(), "Wrong odom_velocities_size");
+    //     rclcpp::shutdown();
+    // }
 
-    float w0 = W[0];
-    float w1 = W[1];
-    float w2 = W[2];
-    float w3 = W[3];
+    // float w0 = W[0];
+    // float w1 = W[1];
+    // float w2 = W[2];
+    // float w3 = W[3];
 
-    std::vector<float> V;
-    V.resize(GLOBAL_VELS_NUM_);
+    // std::vector<float> V;
+    // V.resize(GLOBAL_VELS_NUM_);
 
-    V[0] = (+w0 + w1 + w2 + w3) * r_ / 4;
-    V[1] = (-w0 + w1 + w2 - w3) * r_ / 4;
-    V[2] = (-w0 + w1 - w2 + w3) * r_ / 4 / (lx_ + ly_);
+    // V[0] = (+w0 + w1 + w2 + w3) * r_ / 4;
+    // V[1] = (-w0 + w1 + w2 - w3) * r_ / 4;
+    // V[2] = (-w0 + w1 - w2 + w3) * r_ / 4 / (lx_ + ly_);
 
-    return V;
+    // return V;
+
+    exit(-4);
 }
 
 
@@ -243,14 +239,15 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
     std::vector<float> X;
     X.resize(GLOBAL_VELS_NUM_);
 
-    float dp0 = P[0] - prev_P_[0];
-    float dp1 = P[1] - prev_P_[1];
-    float dp2 = P[2] - prev_P_[2];
-    float dp3 = P[3] - prev_P_[3];
+    float dpl = P[0] - prev_P_[0];
+    float dpr = P[1] - prev_P_[1];
 
-    float dx = (+dp0 + dp1 + dp2 + dp3) * r_ / 4;
-    float dy = (-dp0 + dp1 + dp2 - dp3) * r_ / 4;
-    float dY = (-dp0 + dp1 - dp2 + dp3) * r_ / 4 / (lx_ + ly_);
+    float ds = (dpr + dpl) * r_ / 2;
+    float dth = (dpr - dpl) * r_ / l_;
+
+    float dx = ds * std::sin(dth);
+    float dy = ds * std::cos(dth);
+    float dY = dth;
 
     X[0] = prev_X_[0] + dx * std::cos(prev_X_[2]) - dy * std::sin(prev_X_[2]);
     X[1] = prev_X_[1] + dx * std::sin(prev_X_[2]) + dy * std::cos(prev_X_[2]);
@@ -264,26 +261,28 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
 
 
 std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
-    if (X.size() != GLOBAL_POSES_NUM_) {
-        RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
-        rclcpp::shutdown();
-    }
+    // if (X.size() != GLOBAL_POSES_NUM_) {
+    //     RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
+    //     rclcpp::shutdown();
+    // }
 
-    float x = X[0];
-    float y = X[1];
-    float z = X[2];
+    // float x = X[0];
+    // float y = X[1];
+    // float z = X[2];
 
-    std::vector<float> P;
-    P.resize(vel_num_);
+    // std::vector<float> P;
+    // P.resize(vel_num_);
 
-    P[0] = (x - y - (lx_ + ly_) * z) / r_;
-    P[1] = (x + y + (lx_ + ly_) * z) / r_;
-    P[2] = (x + y - (lx_ + ly_) * z) / r_;
-    P[3] = (x - y + (lx_ + ly_) * z) / r_;
+    // P[0] = (x - y - (lx_ + ly_) * z) / r_;
+    // P[1] = (x + y + (lx_ + ly_) * z) / r_;
+    // P[2] = (x + y - (lx_ + ly_) * z) / r_;
+    // P[3] = (x - y + (lx_ + ly_) * z) / r_;
 
-    std::vector<int64_t> T = rads2ticks(P);
+    // std::vector<int64_t> T = rads2ticks(P);
 
-    return T;
+    // return T;
+
+    exit(-4);
 }
 
 
