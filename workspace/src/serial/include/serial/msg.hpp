@@ -47,27 +47,4 @@ namespace msg_structure {
 }
 
 
-namespace tasks {
-    const uint8_t PING = 0;
-    const uint8_t DISCONNECT = 1;
-    const uint8_t SET_PID = 2;
-}
-
-
-namespace msg_sizes {
-    const uint8_t SET_PID = 16;
-    const uint8_t RESET_PID = 4;
-    const uint8_t POSE = 51;
-}
-
-
-namespace serial_msgs {
-    inline std::vector<size_t> pose_idx = {2, 10, 18, 26, 34, 38, 42, 46, 50, 54, 58, 62};
-    inline std::vector<size_t> pose_sz = {8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4, 4};
-
-    inline std::vector<size_t> pid_idx = {3, 7, 11};
-    inline std::vector<size_t> pid_sz = {4, 4, 4};
-}
-
-
 #endif // SERIAL_MSG_HPP

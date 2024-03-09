@@ -1,0 +1,50 @@
+drive_controller_serial:
+    ros__parameters:
+        port: /dev/ttyACM1                         # arduino port
+        baudrate: 2000000                          # baudrate for arduino
+        cmd_size: 32                               # msg size from linux
+        msg_size: 67                               # msg size from arduino
+        receive_time: 100                          # delay after receiving msg from arduino
+        pub_topic: /serial/drive_controller/pub    # topic name for arduino receiver
+        sub_topic: /serial/drive_controller/sub    # topic name for arduino sender
+
+drive_controller:
+    ros__parameters:
+        odom_pub: /odom                            # output odometry topic
+        cmd_vel_sub: /cmd_vel                      # input cmd_vel topic
+        serial_pub: /serial/drive_controller/pub   # topic with motors velocities values in rad/s
+        serial_sub: /serial/drive_controller/sub   # topic with odometry poses in ticks and odometry velocities in rad/s
+        pid_sub: /drive_controller/pid             # topic with PID-terms from keyboard handler
+        reset_sub: /drive_controller/reset         # odom reset topic from keyboard handler
+        
+        r: 0.048                                   # wheel radius
+        lx: 0.097                                  # half of the distance between front wheel and rear wheel
+        ly: 0.107                                  # half of the distance between front wheels
+        ticks: 206.26                              # number of ticks per one rotation
+        frame_id: odom                             # odom frame id
+        child_frame_id: base_footprint             # child frame id for odom frame
+
+        reset_timeout: 2                           # reset timeout (in seconds) for odom reset from keyboard handler
+
+        kp: 4.0                                    # P-term of PID regulator
+        ki: 0.0                                    # I-term of PID regulator
+        kd: 1.0                                    # D-term of PID regulator
+
+        cmd_size: 29                               # cmd size
+        pose_num: 4                                # number of poses in serial msg
+        pose_size: 8                               # size of each pose in serial msg
+        vel_num: 4                                 # number of velocities in serial msg
+        vel_size: 4                                # size of each velocity in serial msg
+        target_num: 4                              # number of targets in serial msg
+        target_size: 4                             # size of each target in serial msg
+
+keyboard_handler:
+    ros__parameters:
+        pid_pub: /drive_controller/pid             # topic with PID-terms from keyboard handler
+        reset_pub: /drive_controller/reset         # odom reset topic from keyboard handler
+
+        kp: 4.0                                    # P-term of PID regulator
+        ki: 0.0                                    # I-term of PID regulator
+        kd: 1.0                                    # D-term of PID regulator
+
+        reset_timeout: 2                           # reset timeout (in seconds) for odom reset

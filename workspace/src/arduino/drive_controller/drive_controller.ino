@@ -22,11 +22,6 @@ void setup() {
     serial::connect();
 
     start_time = millis();
-
-    motor0.setPwm(1, 255);
-    motor0.setPwm(1, 255);
-    motor0.setPwm(1, 255);
-    motor0.setPwm(1, 255);
 }
 
 
@@ -36,7 +31,7 @@ void loop() {
     Motor::spinMotors();
 
     if (millis() - start_time >= 100) {
-        serial::send_data(poses, velocities, targets);
+        serial::send_data(msg_poses, msg_vels, msg_targets);
         start_time = millis();
     }
 }

@@ -24,10 +24,6 @@
 #define MOTOR_2_ENCA         20
 #define MOTOR_3_ENCA         21
 
-#define KP                 20.0
-#define KI                  0.0
-#define KD                  0.0
-
 #define TPR              206.26
 
 #define SERIAL_BAUDRATE 2000000
@@ -37,10 +33,8 @@
 #define START_BYTE1_IDX       1
 #define DATA_IDX              2
 
-#define CMD_SIZE             19
-#define CMD_DATA_SIZE        16
+#define CMD_SIZE             32
 #define MSG_SIZE             67
-
 
 #define KP_IDX                3
 #define KD_IDX                7
@@ -67,6 +61,10 @@
 #define CMD_VEL1_IDX          6
 #define CMD_VEL2_IDX         10
 #define CMD_VEL3_IDX         14
+#define CMD_KP_IDX           18
+#define CMD_KI_IDX           22
+#define CMD_KD_IDX           26
+#define CMD_RESET_IDX        30
 
 #define CMD_VEL_SIZE          4
 
