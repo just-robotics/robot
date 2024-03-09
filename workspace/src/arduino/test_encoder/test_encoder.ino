@@ -29,10 +29,11 @@ void setup() {
 void loop() {
 
     Serial.println((int)pose);
-/*
+    
+#if 0
     Serial.print(digitalRead(ENCA));
     Serial.print(" ");
     Serial.println(digitalRead(ENCB));
     delay(100);
-*/
+#endif
 }

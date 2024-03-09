@@ -7,10 +7,11 @@ ENV ROS_DISTRO humble
 RUN echo "source ${WS}/install/setup.bash" >> ~/.bashrc
 RUN echo "cd /workspace" >> ~/.bashrc
 
-# Install ROS pkgs 
+# install packages
 
 RUN apt update -y
 
+RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-pip
 RUN DEBIAN_FRONTEND=noninteractive apt install -y vim emacs nano
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-gazebo-ros
@@ -30,3 +31,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-realsense2-*
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-plotjuggler-ros
+
+RUN python3 -m pip install setuptools==58.2.0

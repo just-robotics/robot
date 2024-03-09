@@ -1,12 +1,12 @@
-#define MOTOR_0_ENCA 0
-#define MOTOR_1_ENCA 1
-#define MOTOR_2_ENCA 2
-#define MOTOR_3_ENCA 3
+#define MOTOR_0_ENCB 14 // GREEN
+#define MOTOR_1_ENCB 15
+#define MOTOR_2_ENCB 16
+#define MOTOR_3_ENCB 17
 
-#define MOTOR_0_ENCB 4
-#define MOTOR_1_ENCB 7
-#define MOTOR_2_ENCB 8
-#define MOTOR_3_ENCB 11
+#define MOTOR_0_ENCA 18 // YELLOW
+#define MOTOR_1_ENCA 19
+#define MOTOR_2_ENCA 20
+#define MOTOR_3_ENCA 21
 
 
 int64_t pose0 = 0;
@@ -15,46 +15,14 @@ int64_t pose2 = 0;
 int64_t pose3 = 0;
 
 
-int64_t readEncoder0(int encb) {
+void readEncoder(int encb, int64_t* pose) {
     int b = digitalRead(encb);
+    int k = (encb == MOTOR_0_ENCB || encb == MOTOR_2_ENCB) ? 1 : -1;
     if (b > 0) {
-        pose0++;
+        *pose = *pose + k;
     }
     else {
-        pose0--;
-    }
-}
-
-
-int64_t readEncoder1(int encb) {
-    int b = digitalRead(encb);
-    if (b > 0) {
-        pose1--;
-    }
-    else {
-        pose1++;
-    }
-}
-
-
-int64_t readEncoder2(int encb) {
-    int b = digitalRead(encb);
-    if (b > 0) {
-        pose2++;
-    }
-    else {
-        pose2--;
-    }
-}
-
-
-int64_t readEncoder3(int encb) {
-    int b = digitalRead(encb);
-    if (b > 0) {
-        pose3--;
-    }
-    else {
-        pose3++;
+        *pose = *pose - k;
     }
 }
 
@@ -72,10 +40,10 @@ void setup() {
     pinMode(MOTOR_3_ENCA, INPUT);
     pinMode(MOTOR_3_ENCB, INPUT);
 
-    attachInterrupt(digitalPinToInterrupt(MOTOR_0_ENCA), [] () {readEncoder0(MOTOR_0_ENCB);}, RISING);
-    attachInterrupt(digitalPinToInterrupt(MOTOR_1_ENCA), [] () {readEncoder1(MOTOR_1_ENCB);}, RISING);
-    attachInterrupt(digitalPinToInterrupt(MOTOR_2_ENCA), [] () {readEncoder2(MOTOR_2_ENCB);}, RISING);
-    attachInterrupt(digitalPinToInterrupt(MOTOR_3_ENCA), [] () {readEncoder3(MOTOR_3_ENCB);}, RISING);
+    attachInterrupt(digitalPinToInterrupt(MOTOR_0_ENCA), [] () {readEncoder(MOTOR_0_ENCB, &pose0);}, RISING);
+    attachInterrupt(digitalPinToInterrupt(MOTOR_1_ENCA), [] () {readEncoder(MOTOR_1_ENCB, &pose1);}, RISING);
+    attachInterrupt(digitalPinToInterrupt(MOTOR_2_ENCA), [] () {readEncoder(MOTOR_2_ENCB, &pose2);}, RISING);
+    attachInterrupt(digitalPinToInterrupt(MOTOR_3_ENCA), [] () {readEncoder(MOTOR_3_ENCB, &pose3);}, RISING);
 
     Serial.begin(2000000);
     Serial.setTimeout(0);

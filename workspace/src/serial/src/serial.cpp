@@ -1,38 +1,49 @@
 #include "../include/serial/serial.hpp"
 
 
-// using namespace _serial;
+bool even = false;
 
 
-bool _serial::openArduino() {
-    if (Arduino == -1) {
-        return false;
+Serial::Serial(std::string port, size_t baudrate, size_t cmd_size, size_t msg_size) {
+    fd_ = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+    tcgetattr(fd_, &serial_port_settings_);
+
+    serial_port_settings_.c_cflag |= (CLOCAL | CREAD);    // Ignore modem controls
+    serial_port_settings_.c_cflag &= ~CSIZE;
+    serial_port_settings_.c_cflag |= CS8;     // 8 bit chars
+    serial_port_settings_.c_cflag &= ~(PARENB | PARODD);  // shut off parody
+    serial_port_settings_.c_cflag &= ~CSTOPB; //no scts stop
+    serial_port_settings_.c_iflag &= ~IGNBRK; //disable break processing
+    serial_port_settings_.c_iflag = 0;        // no echo
+    serial_port_settings_.c_iflag &= ~(IXON | IXOFF | IXANY); // no software flow control
+    serial_port_settings_.c_oflag = 0;        // no remapping
+    serial_port_settings_.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG |IEXTEN);
+    serial_port_settings_.c_cc[VMIN] = 0;     // read doesn't block
+    serial_port_settings_.c_cc[VTIME] = 0;    // 0s read timeout
+
+    cfsetspeed(&serial_port_settings_, baudrate);
+
+    tcsetattr(fd_, TCSANOW, &serial_port_settings_);
+
+    port_ = port;
+    baudrate_ = baudrate;
+    cmd_size_ = cmd_size;
+    msg_size_ = msg_size;
+
+    is_feedback_correct_ = false;
+    if (fd_ != -1) {
+        is_opened_ = true;
     }
-
-    tcgetattr(Arduino, &SerialPortSettings);
-
-    SerialPortSettings.c_cflag |= (CLOCAL | CREAD);    // Ignore modem controls
-    SerialPortSettings.c_cflag &= ~CSIZE;
-    SerialPortSettings.c_cflag |= CS8;     // 8 bit chars
-    SerialPortSettings.c_cflag &= ~(PARENB | PARODD);  // shut off parody
-    SerialPortSettings.c_cflag &= ~CSTOPB; //no scts stop
-    SerialPortSettings.c_iflag &= ~IGNBRK; //disable break processing
-    SerialPortSettings.c_iflag = 0;        // no echo
-    SerialPortSettings.c_iflag &= ~(IXON | IXOFF | IXANY); // no software flow control
-    SerialPortSettings.c_oflag = 0;        // no remapping
-    SerialPortSettings.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG |IEXTEN);
-    SerialPortSettings.c_cc[VMIN] = 0;     // read doesn't block
-    SerialPortSettings.c_cc[VTIME] = 0;    // 0s read timeout
-
-    cfsetspeed(&SerialPortSettings, SERIAL_BAUDRATE);
-
-    tcsetattr(Arduino, TCSANOW, &SerialPortSettings);
-
-    return true;
 }
 
 
-uint8_t _serial::crc8(const uint8_t* pocket, size_t size) {
+Serial::~Serial() {
+    disconnect();
+}
+
+
+uint8_t Serial::crc8(const uint8_t* pocket, size_t size) {
     uint8_t BYTE_SIZE = 8;
     uint8_t MSB_MASK = 0x80;
     uint8_t byte;
@@ -58,18 +69,18 @@ uint8_t _serial::crc8(const uint8_t* pocket, size_t size) {
 }
 
 
-void _serial::calcCommandCheckSum(Msg* msg) {
-    uint8_t checksum = crc8(msg->msg(), msg->size() - 1);
-    msg->set_checksum(checksum);
+void Serial::setChecksumForSend(Msg* msg) {
+    uint8_t checksum = crc8(msg->data(), msg->size() - 1);
+    msg->setChecksum(checksum);
 }
 
 
-uint8_t _serial::calcMessageCheckSum(uint8_t buffer[], size_t size) {
-    return crc8(buffer, size);
+bool Serial::checkChecksumFromReceive(uint8_t buffer[], size_t size) {
+    return crc8(buffer, size) == 0;
 }
 
 
-void serial::delay(size_t ms) {
+void Serial::delay(size_t ms) {
     auto start_timer = std::chrono::system_clock::now();
     while (true) {
         auto end_timer = std::chrono::system_clock::now();
@@ -81,151 +92,123 @@ void serial::delay(size_t ms) {
 }
 
 
-void serial::sendCommand(Msg* msg) {
-    _serial::calcCommandCheckSum(msg);
-    write(_serial::Arduino, msg->msg(), msg->size());
-    if (msg->size() != MsgSizes::PING && msg->task() == Tasks::PING) {
-        std::cout << "WARNING: NON_PING command was sent with PING task" << std::endl;
+void Serial::send(Msg* msg) {
+    if (msg->size() == 0) {
+        std::cout << "EMPTY" << std::endl;
+        return;
     }
+    
+    msg->setStartBytes();
+    setChecksumForSend(msg);
+    std::cout << "msg ";
+    msg->print();
+    std::cout << "SIZE: " << msg->size() << std::endl;
+    write(fd_, msg->data(), msg->size());
 }
 
 
-#define SIZE_FROM_SERIAL 0
-#if not SIZE_FROM_SERIAL
-Msg serial::receiveMessage(size_t size) {
+Msg Serial::receive(size_t size) {
     Msg msg(size);
-    read(_serial::Arduino, msg.msg(), size);
+    read(fd_, msg.data(), size);
 
-    _serial::is_feedback_correct = false;
-
-    if (msg[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && msg[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
-        
-        if (!_serial::calcMessageCheckSum(msg.msg(), size)) {
-            _serial::is_feedback_correct = true;
-            return msg;
-        }
-    }
-    return Msg(0);
-}
-
-
-#else // receiveMessage with getting size from serial
-Msg serial::receiveMessage(size_t size) {
-    uint8_t st[2];
-    uint8_t task;
-    read(_serial::Arduino, st, 2);
-
-    std::cout << (int)st[0] << " " << (int)st[1] << std::endl;
-
-    Msg msg;
-
-    if (st[0] == 64 && st[1] == 64) {
-        std::cout << "OK" << std::endl;
-        read(_serial::Arduino, &task, 1);
-        std::cout << (int)task << std::endl;
-        if (task == Tasks::PING) {
-            std::cout << "TASK_OK" << std::endl;
-        }
-        msg = Msg(4);
-        //msg.set_task(Tasks::PING);
-        // uint8_t c;
-        // read(Arduino, &c, 1);
-        // msg.set_checksum(c);
-        // msg.msg()[0] = 64;
-        // msg.msg()[1] = 64;
-    }
-
-    _serial::is_feedback_correct = false;
-
+    is_feedback_correct_ = false;
 
     msg.print();
 
-    // if (msg[MsgStructure::START_BYTE0_IDX] == MsgStructure::START_BYTE && msg[MsgStructure::START_BYTE1_IDX] == MsgStructure::START_BYTE) {
+    if (msg[msg_structure::START_BYTE0_IDX] == msg_structure::START_BYTE && msg[msg_structure::START_BYTE1_IDX] == msg_structure::START_BYTE) {
         
-    //     if (!_serial::calcMessageCheckSum(msg.msg(), size)) {
-    //         _serial::is_feedback_correct = true;
-    //         std::cout << "OK" << std::endl;
-    //         return msg;
-    //     }
-    // }
+        if (checkChecksumFromReceive(msg.data(), size)) {
+            is_feedback_correct_ = true;
+            return msg;
+        }
+    }
+    std::string nop = !even ? "NOP" : " NOP";
+    even = !even;
+    std::cout << nop << std::endl;
+    
     return Msg(0);
 }
-#endif
 
 
-bool serial::checkFeedback() {
-    return _serial::is_feedback_correct;
+bool Serial::checkFeedback() {
+    return is_feedback_correct_;
 }
 
 
-bool serial::setConnection() {
-    if (!_serial::openArduino()) {
-        std::cout << "unable to connect" << std::endl;
+bool Serial::is_opened() {
+    return (fd_ != -1 && is_opened_);
+}
+
+
+bool Serial::connect() {
+    if (!is_opened()) {
+        std::cout << "not opened" << std::endl;
         return false;
     }
 
-    Msg ping_cmd(MsgSizes::PING);
-
+    Msg ping_cmd(cmd_size_);
+    
     auto start_timer = std::chrono::system_clock::now();
-    while (!_serial::is_feedback_correct) {
+    while (!is_feedback_correct_) {
         auto end_timer = std::chrono::system_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(_serial::TIMER)) {
-            sendCommand(&ping_cmd);
-            receiveMessage(MsgSizes::PING);
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(end_timer - start_timer).count() > int(TIMER_)) {
+            send(&ping_cmd);
+            receive(msg_size_);
             start_timer = std::chrono::system_clock::now();
         }
     }
     std::cout << "connected" << std::endl;
-    delay(200);
+    delay(100);
     return true;
 }
 
 
-void serial::disconnectArduino() {
-    Msg msg(MsgSizes::DISCONNECT);
-    msg.set_task(Tasks::DISCONNECT);
-    sendCommand(&msg);
-    close(_serial::Arduino);
+void Serial::disconnect() {
+    close(fd_);
+    is_opened_ = false;
     std::cout << "disconnected" << std::endl;
 }
 
 
-void serial::int64_to_uint8arr(int64_t number, uint8_t* output) {
-    uint8_t byte = 0x000000FF;
-
-    output[8] = number < 0 ? 0 : 1;
-    uint64_t u_number = abs(number);
-
-    output[0] = u_number & byte;
-    
-    for (int i = 1; i < 8; i++) {
-        u_number >>= 8;
-        output[i] = u_number & byte;
-    }
+void Serial::int64_to_uint8arr(int64_t number, uint8_t* output) {
+    std::memcpy(output, &number, sizeof(int64_t));
 }
 
 
-int64_t serial::uint8arr_to_int64(uint8_t* data) {
-    int64_t number = data[7];
-
-    for (int i = 6; i >= 0; i--) {
-        number <<= 8;
-        number = number | data[i];
-    }
-
-    number = data[8] == 1 ? number : -number;
-    
+int64_t Serial::uint8arr_to_int64(uint8_t* data) {
+    int64_t number;
+    std::memcpy(&number, data, sizeof(int64_t));
     return number;
 }
 
 
-void serial::float_to_uint8arr(float f, uint8_t* data) {
-    memcpy(data, &f, sizeof(float));
+void Serial::float_to_uint8arr(float number, uint8_t* data) {
+    memcpy(data, &number, sizeof(float));
 }
 
 
-float serial::uint8arr_to_float(uint8_t* data) {
-    float f;
-    memcpy(&f, data, sizeof(float));
-    return f;
+float Serial::uint8arr_to_float(uint8_t* data) {
+    float number;
+    memcpy(&number, data, sizeof(float));
+    return number;
+}
+
+
+std::string Serial::port() {
+    return port_;
+}
+
+
+size_t Serial::baudrate() {
+    return baudrate_;
+}
+
+
+size_t Serial::cmd_size() {
+    return cmd_size_;
+}
+
+
+size_t Serial::msg_size() {
+    return msg_size_;
 }

@@ -8,8 +8,7 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/int64_multi_array.hpp"
-#include "std_msgs/msg/float32_multi_array.hpp"
+#include "robot_msgs/msg/u_int8_vector.hpp"
 
 #include "serial.hpp"
 
@@ -17,18 +16,20 @@
 class RosSerial : public rclcpp::Node {
 private:
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Publisher<std_msgs::msg::Int64MultiArray>::SharedPtr publisher_;
-    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr subscription_;
+    rclcpp::Publisher<robot_msgs::msg::UInt8Vector>::SharedPtr publisher_;
+    rclcpp::Subscription<robot_msgs::msg::UInt8Vector>::SharedPtr subscription_;
+    Serial* serial_;
 
 public:
-    RosSerial();
+    RosSerial(std::string node_name);
+    ~RosSerial();
 
 private:
-    std_msgs::msg::Int64MultiArray createRosMsg(Msg* serial_msg, std::vector<size_t> data_idx);
-    Msg createSerialMsg(std_msgs::msg::Float32MultiArray ros_msg, std::vector<size_t> data_idx);
+    robot_msgs::msg::UInt8Vector createRosMsg(Msg* serial_msg);
+    Msg createSerialMsg(robot_msgs::msg::UInt8Vector ros_msg);
 
     void timerCallback();
-    void subscriptionCallback(const std_msgs::msg::Float32MultiArray & ros_msg);     
+    void subscriptionCallback(const robot_msgs::msg::UInt8Vector& ros_msg);     
 };
 
 

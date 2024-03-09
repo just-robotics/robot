@@ -2,48 +2,41 @@
 
 
 Msg::Msg() {
+    data_ = nullptr;
     size_ = 0;
-    task_= Tasks::PING;
 }
 
 
-Msg::Msg(size_t size) {
-    size_ = size;
-    task_ = Tasks::PING;
-    msg_ = new uint8_t[size_];
-    memset(msg_, 0, size_);
-    msg_[MsgStructure::START_BYTE0_IDX] = MsgStructure::START_BYTE;
-    msg_[MsgStructure::START_BYTE1_IDX] = MsgStructure::START_BYTE;
-    msg_[MsgStructure::TASK_IDX] = task_;
+Msg::Msg(size_t size) : size_{size} {
+    data_ = new uint8_t[size_];
+    memset(data_, 0, size_);
+}
+
+
+Msg::Msg(size_t size, uint8_t* data) : Msg(size) {
+    std::copy(data, data + size_, data_);
 }
 
 
 Msg::Msg(size_t size, const std::initializer_list<uint8_t> array) : Msg(size) {
-    std::copy(array.begin(), array.end(), msg_);
-}
-
-
-Msg::Msg(size_t size, const uint8_t* array) : Msg(size) {
-    std::copy(array, array + size_, msg_);
+    std::copy(array.begin(), array.end(), data_);
 }
 
 
 Msg::~Msg() {
-    if (size_ != 0) {
-        delete[] msg_;
-    }
+    delete[] data_;
 }
 
 
 Msg::Msg(const Msg& other) : Msg(other.size_) {
-    std::copy(other.msg_, other.msg_ + size_, msg_);
+    std::copy(other.data_, other.data_ + size_, data_);
 }
 
 
 Msg::Msg(Msg&& other) {
     size_ = other.size_;
-    msg_ = other.msg_;
-    other.msg_ = nullptr;
+    data_ = other.data_;
+    other.data_ = nullptr;
 }
 
 Msg& Msg::operator=(const Msg& other) {
@@ -53,9 +46,9 @@ Msg& Msg::operator=(const Msg& other) {
 
     size_ = other.size_;
 
-    delete[] msg_;
-    msg_ = new uint8_t[size_];
-    std::copy(other.msg_, other.msg_ + size_, msg_);
+    delete[] data_;
+    data_ = new uint8_t[size_];
+    std::copy(other.data_, other.data_ + size_, data_);
 
     return *this;
 }
@@ -68,47 +61,43 @@ Msg& Msg::operator=(Msg&& other) {
 
     size_ = other.size_;
 
-    delete[] msg_;
-    msg_ = other.msg_;
-    other.msg_ = nullptr;
+    delete[] data_;
+    data_ = other.data_;
+    other.data_ = nullptr;
 
     return *this;
 }
 
 
-uint8_t Msg::operator[](size_t idx) {
-    return msg_[idx];
+uint8_t& Msg::operator[](size_t idx) {
+    return data_[idx];
 }
 
 
-void Msg::set_checksum(uint8_t checksum) {
-    msg_[size_-1] = checksum;
+void Msg::setStartBytes() {
+    if (size_ == 0) {
+        return;
+    }
+    data_[msg_structure::START_BYTE0_IDX] = msg_structure::START_BYTE;
+    data_[msg_structure::START_BYTE1_IDX] = msg_structure::START_BYTE;
 }
 
 
-void Msg::set_task(uint8_t task) {
-    task_ = task;
-    msg_[MsgStructure::TASK_IDX] = task_;
+void Msg::setChecksum(uint8_t checksum) {
+    if (size_ == 0) {
+        return;
+    }
+    data_[size_-1] = checksum;
+}
+
+
+uint8_t* Msg::data() {
+    return data_;
 }
 
 
 size_t Msg::size() {
     return size_;
-}
-
-
-uint8_t Msg::checksum() {
-    return msg_[size_-1];
-}
-
-
-uint8_t* Msg::msg() {
-    return msg_;
-}
-
-
-uint8_t Msg::task() {
-    return task_;
 }
 
 
@@ -119,7 +108,7 @@ void Msg::print() {
     }
     std::cout << "[";
     for (size_t i = 0; i < size_; i++) {
-        std::cout << static_cast<int>(msg_[i]);
+        std::cout << static_cast<int>(data_[i]);
         if (i != size_ - 1) {
             std::cout << ", ";
         }
