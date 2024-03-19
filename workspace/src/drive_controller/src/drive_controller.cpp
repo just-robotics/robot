@@ -38,11 +38,10 @@ private:
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
-    rclcpp::Publisher<std_msgs::msg::Int64>::SharedPtr pose_pub_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr target_pub_;
+    rclcpp::Publisher<robot_msgs::msg::Float32Vector>::SharedPtr pose_pub_;
+    rclcpp::Publisher<robot_msgs::msg::Float32Vector>::SharedPtr target_pub_;
     rclcpp::Subscription<robot_msgs::msg::Float32Vector>::SharedPtr pid_sub_;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reset_sub_;
-
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf2_broadcaster_;
 
@@ -149,8 +148,8 @@ DriveController::DriveController() : Node("drive_controller") {
     serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10);
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
 
-    pose_pub_ = this->create_publisher<std_msgs::msg::Int64>("/dbg/pose", 10);
-    target_pub_ = this->create_publisher<std_msgs::msg::Float32>("/dbg/target", 10);
+    pose_pub_ = this->create_publisher<robot_msgs::msg::Float32Vector>("/dbg/pose", 10);
+    target_pub_ = this->create_publisher<robot_msgs::msg::Float32Vector>("/dbg/target", 10);
 
     serial_sub_ = this->create_subscription<robot_msgs::msg::UInt8Vector>(serial_pub_topic, 10, std::bind(&DriveController::odomCallback, this, _1));
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_sub_topic, 10, std::bind(&DriveController::cmdVelCallback, this, _1));
@@ -219,7 +218,7 @@ std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
     }
 
     return P;
- }
+}
 
 
 std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
@@ -229,7 +228,7 @@ std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
     }
 
     return T;
- }
+}
 
 
 std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
@@ -290,31 +289,22 @@ std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
 void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     std::vector<int64_t> P;
     std::vector<float> W;
-    std::vector<float> T;
+
+    auto pose_msg = robot_msgs::msg::Float32Vector();
+    auto target_msg = robot_msgs::msg::Float32Vector();
 
     for (size_t i = 0; i < pose_num_; i++) {
         int64_t pose;
+        float wheel_vel;
+        float target;
         std::memcpy(&pose, msg.data.data() + i * pose_size_, pose_size_);
+        std::memcpy(&wheel_vel, msg.data.data() + pose_num_ * pose_size_ + i * vel_size_, vel_size_);
+        std::memcpy(&target, msg.data.data() + pose_num_ * pose_size_ + vel_num_ * vel_size_ + i * target_size_, target_size_);
         P.push_back(pose);
+        W.push_back(wheel_vel);
+        pose_msg.data.push_back(float(pose));
+        target_msg.data.push_back(target);
     }
-
-    for (size_t i = 0; i < pose_num_; i++) {
-        float w;
-        std::memcpy(&w, msg.data.data() + pose_num_ * pose_size_ + i * vel_size_, vel_size_);
-        W.push_back(w);
-    }
-
-    for (size_t i = 0; i < target_num_; i++) {
-        float t;
-        std::memcpy(&t, msg.data.data() + pose_num_ * pose_size_ + vel_num_ * vel_size_ + i * target_size_, target_size_);
-        T.push_back(t);
-    }
-
-    auto pose_msg = std_msgs::msg::Int64();
-    auto target_msg = std_msgs::msg::Float32();
-
-    pose_msg.data = P[0];
-    target_msg.data = T[0];
 
     pose_pub_->publish(pose_msg);
     target_pub_->publish(target_msg);
@@ -338,7 +328,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     odom.pose.pose.orientation.y = q.y();
     odom.pose.pose.orientation.z = q.z();
     odom.pose.pose.orientation.w = q.w();
-/*
+
     std::vector<float> V = calcInverseKinematics(W);
 
     odom.twist.twist.linear.x = V[0];
@@ -348,7 +338,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     odom.twist.twist.angular.x = 0;
     odom.twist.twist.angular.y = 0;
     odom.twist.twist.angular.z = V[2];
-*/
+
     odom_pub_->publish(odom);
 
     auto transform = geometry_msgs::msg::TransformStamped();
