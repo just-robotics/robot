@@ -17,17 +17,17 @@ drive_controller:
         pid_sub: /drive_controller/pid             # topic with PID-terms from keyboard handler
         reset_sub: /drive_controller/reset         # odom reset topic from keyboard handler
         
-        r: 0.048                                   # wheel radius
-        l: 0.107                                   # distance between wheels
-        ticks: 206.26                              # number of ticks per one rotation
+        r: 0.032                                   # wheel radius
+        l: 0.237                                   # distance between wheels
+        ticks: 329.9125                            # number of ticks per one rotation
         frame_id: odom                             # odom frame id
         child_frame_id: base_footprint             # child frame id for odom frame
 
         reset_timeout: 2                           # reset timeout (in seconds) for odom reset from keyboard handler
 
-        kp: 4.0                                    # P-term of PID regulator
+        kp: 2.0                                    # P-term of PID regulator
         ki: 0.0                                    # I-term of PID regulator
-        kd: 1.0                                    # D-term of PID regulator
+        kd: 0.1                                    # D-term of PID regulator
 
         cmd_size: 21                               # cmd size
         pose_num: 2                                # number of poses in serial msg
@@ -42,8 +42,8 @@ keyboard_handler:
         pid_pub: /drive_controller/pid             # topic with PID-terms from keyboard handler
         reset_pub: /drive_controller/reset         # odom reset topic from keyboard handler
 
-        kp: 4.0                                    # P-term of PID regulator
+        kp: 2.0                                    # P-term of PID regulator
         ki: 0.0                                    # I-term of PID regulator
-        kd: 1.0                                    # D-term of PID regulator
+        kd: 0.1                                    # D-term of PID regulator
 
         reset_timeout: 2                           # reset timeout (in seconds) for odom reset

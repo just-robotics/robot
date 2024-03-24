@@ -12,7 +12,7 @@ float cmd_vels[MOTORS];
 
 bool state = false;
 
-float kp = 0;
+float kp = 1;
 float ki = 0;
 float kd = 0;
 
@@ -92,8 +92,7 @@ Motor::Motor(uint8_t enca, uint8_t encb, uint8_t f_pin, uint8_t b_pin) {
 
 
 void Motor::readEncoder(uint8_t encb, int64_t* pose, int8_t encoder_inc) {    
-    int b = digitalRead(encb);
-    if (b > 0) {
+    if (digitalRead(encb) > 0) {
         *pose += encoder_inc;
     }
     else {

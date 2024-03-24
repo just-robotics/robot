@@ -157,7 +157,7 @@ DriveController::DriveController() : Node("drive_controller") {
 
     tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-    reset_X_ = {0, 0};
+    reset_X_ = {0, 0, 0};
     reset_P_ = {0, 0};
 
     prev_X_ = reset_X_;
@@ -245,8 +245,8 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
     float ds = (dpr + dpl) * r_ / 2;
     float dth = (dpr - dpl) * r_ / l_;
 
-    float dx = ds * std::sin(dth);
-    float dy = ds * std::cos(dth);
+    float dx = ds * std::cos(dth);
+    float dy = ds * std::sin(dth);
     float dY = dth;
 
     X[0] = prev_X_[0] + dx * std::cos(prev_X_[2]) - dy * std::sin(prev_X_[2]);
