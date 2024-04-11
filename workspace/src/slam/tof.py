@@ -36,7 +36,7 @@ def find_m(is_v: bool, data):
 
 
 def tof(rotate: bool):
-    idx = 8
+    idx = 5
     path = f'./data/boxt{idx}.{"pgm" if (a[idx] == 0) or rotate else "png"}'
     data_orig = cv.imread(path)
     data_orig_scaled = cv.resize(data_orig, (480, 480))
