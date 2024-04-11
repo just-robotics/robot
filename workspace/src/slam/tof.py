@@ -1,10 +1,11 @@
 import cv2 as cv
 import numpy as np
 
-from points import c, r, a
+from points import c, r, a, rc
 
 
-red = (0, 0, 255)
+RED = (0, 0, 255)
+BLUE = (255, 0, 0)
 
 
 def rotate_image(image, angle):
@@ -17,11 +18,12 @@ def rotate_image(image, angle):
 
 
 def paint_rect(map, tup: tuple):
-    cv.rectangle(map, (tup[2], tup[0]), (tup[3], tup[1]), red, 1)
+    cv.rectangle(map, (tup[2], tup[0]), (tup[3], tup[1]), RED, 1)
 
 
 def find_m(is_v: bool, data):
     h, w = data.shape[:2]
+    print(h, w)
     m = 0
     cnt = 0
     for y in range(h):
@@ -32,11 +34,11 @@ def find_m(is_v: bool, data):
     if cnt == 0:
         print('EMPTY')
         exit(1)
+    print('NOT EMPTY')
     return int(m / cnt)
 
 
-def tof(rotate: bool):
-    idx = 5
+def tof(idx, rotate: bool):
     path = f'./data/boxt{idx}.{"pgm" if (a[idx] == 0) or rotate else "png"}'
     data_orig = cv.imread(path)
     data_orig_scaled = cv.resize(data_orig, (480, 480))
@@ -65,10 +67,20 @@ def tof(rotate: bool):
     paint_rect(rects, r[idx][2])
     paint_rect(rects, r[idx][3])
 
+    paint_rect(rects, rc[idx][0])
+    paint_rect(rects, rc[idx][1])
+    paint_rect(rects, rc[idx][2])
+    paint_rect(rects, rc[idx][3])
+
     hu = binary[r[idx][0][0]:r[idx][0][1]+1, r[idx][0][2]:r[idx][0][3]+1].copy()
     hl = binary[r[idx][1][0]:r[idx][1][1]+1, r[idx][1][2]:r[idx][1][3]+1].copy()
     vl = binary[r[idx][2][0]:r[idx][2][1]+1, r[idx][2][2]:r[idx][2][3]+1].copy()
     vr = binary[r[idx][3][0]:r[idx][3][1]+1, r[idx][3][2]:r[idx][3][3]+1].copy()
+
+    bhu = binary[rc[idx][0][0]:rc[idx][0][1]+1, rc[idx][0][2]:rc[idx][0][3]+1].copy()
+    bhl = binary[rc[idx][1][0]:rc[idx][1][1]+1, rc[idx][1][2]:rc[idx][1][3]+1].copy()
+    bvl = binary[rc[idx][2][0]:rc[idx][2][1]+1, rc[idx][2][2]:rc[idx][2][3]+1].copy()
+    bvr = binary[rc[idx][3][0]:rc[idx][3][1]+1, rc[idx][3][2]:rc[idx][3][3]+1].copy()
     
     yhu = find_m(False, hu)
     yhl = find_m(False, hl)
@@ -79,23 +91,47 @@ def tof(rotate: bool):
     vl = cv.cvtColor(vl, cv.COLOR_GRAY2BGR)
     vr = cv.cvtColor(vr, cv.COLOR_GRAY2BGR)
 
-    cv.line(hu, (0, yhu), (hu.shape[1], yhu), red, 1)
-    cv.line(hl, (0, yhl), (hl.shape[1], yhl), red, 1)
-    cv.line(vl, (xvl, 0), (xvl, vl.shape[0]), red, 1)
-    cv.line(vr, (xvr, 0), (xvr, vr.shape[0]), red, 1)
+    ybhu = find_m(False, bhu)
+    ybhl = find_m(False, bhl)
+    xbvl = find_m(True, bvl)
+    xbvr = find_m(True, bvr)
+    bhu = cv.cvtColor(bhu, cv.COLOR_GRAY2BGR)
+    bhl = cv.cvtColor(bhl, cv.COLOR_GRAY2BGR)
+    bvl = cv.cvtColor(bvl, cv.COLOR_GRAY2BGR)
+    bvr = cv.cvtColor(bvr, cv.COLOR_GRAY2BGR)
+
+    cv.line(hu, (0, yhu), (hu.shape[1], yhu), RED, 1)
+    cv.line(hl, (0, yhl), (hl.shape[1], yhl), RED, 1)
+    cv.line(vl, (xvl, 0), (xvl, vl.shape[0]), RED, 1)
+    cv.line(vr, (xvr, 0), (xvr, vr.shape[0]), RED, 1)
+
+    cv.line(bhu, (0, ybhu), (bhu.shape[1], ybhu), BLUE, 1)
+    cv.line(bhl, (0, ybhl), (bhl.shape[1], ybhl), BLUE, 1)
+    cv.line(bvl, (xbvl, 0), (xbvl, bvl.shape[0]), BLUE, 1)
+    cv.line(bvr, (xbvr, 0), (xbvr, bvr.shape[0]), BLUE, 1)
 
     map = cv.cvtColor(map, cv.COLOR_GRAY2BGR)
-    cv.line(map, (0, r[idx][0][0]+yhu), (map.shape[1], r[idx][0][0]+yhu), red, 1)
-    cv.line(map, (0, r[idx][1][0]+yhl), (map.shape[1], r[idx][1][0]+yhl), red, 1)
-    cv.line(map, (r[idx][2][2]+xvl, 0), (r[idx][2][2]+xvl, map.shape[0]), red, 1)
-    cv.line(map, (r[idx][3][2]+xvr, 0), (r[idx][3][2]+xvr, map.shape[0]), red, 1)
+    cv.line(map, (0, r[idx][0][0]+yhu), (map.shape[1], r[idx][0][0]+yhu), RED, 1)
+    cv.line(map, (0, r[idx][1][0]+yhl), (map.shape[1], r[idx][1][0]+yhl), RED, 1)
+    cv.line(map, (r[idx][2][2]+xvl, 0), (r[idx][2][2]+xvl, map.shape[0]), RED, 1)
+    cv.line(map, (r[idx][3][2]+xvr, 0), (r[idx][3][2]+xvr, map.shape[0]), RED, 1)
+
+    cv.line(map, (0, rc[idx][0][0]+ybhu), (map.shape[1], rc[idx][0][0]+ybhu), BLUE, 1)
+    cv.line(map, (0, rc[idx][1][0]+ybhl), (map.shape[1], rc[idx][1][0]+ybhl), BLUE, 1)
+    cv.line(map, (rc[idx][2][2]+xbvl, 0), (rc[idx][2][2]+xbvl, map.shape[0]), BLUE, 1)
+    cv.line(map, (rc[idx][3][2]+xbvr, 0), (rc[idx][3][2]+xbvr, map.shape[0]), BLUE, 1)
+
+    map_scaled = cv.resize(map, (480, 480))
 
     cv.imshow('hu', hu)
     cv.imshow('hl', hl)
     cv.imshow('vl', vl)
     cv.imshow('vr', vr)
-    
-    map_scaled = cv.resize(map, (480, 480))
+
+    cv.imshow('bhu', bhu)
+    cv.imshow('bhl', bhl)
+    cv.imshow('bvl', bvl)
+    cv.imshow('bvr', bvr)
     
     cv.imshow('rects', rects)
     cv.imshow('map', map)
@@ -105,6 +141,17 @@ def tof(rotate: bool):
     cv.imshow('binary', binary)
     cv.waitKey(0)
 
+    return map
+
+
+def draw_lines_tof():
+    map_list = []
+    for i in range(10):
+        map_list.append(tof(i, False))
+    for i in range(10):
+        cv.imshow(f'map {i}', map_list[i])
+    cv.waitKey(0)
+
 
 if __name__ == '__main__':
-    tof(False)
+    tof(3, False)
