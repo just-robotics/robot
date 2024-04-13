@@ -23,7 +23,6 @@ def paint_rect(map, tup: tuple):
 
 def find_m(is_v: bool, data):
     h, w = data.shape[:2]
-    print(h, w)
     m = 0
     cnt = 0
     for y in range(h):
@@ -34,7 +33,6 @@ def find_m(is_v: bool, data):
     if cnt == 0:
         print('EMPTY')
         exit(1)
-    print('NOT EMPTY')
     return int(m / cnt)
 
 
@@ -121,7 +119,35 @@ def tof(idx, rotate: bool):
     cv.line(map, (rc[idx][2][2]+xbvl, 0), (rc[idx][2][2]+xbvl, map.shape[0]), BLUE, 1)
     cv.line(map, (rc[idx][3][2]+xbvr, 0), (rc[idx][3][2]+xbvr, map.shape[0]), BLUE, 1)
 
+    hsv = cv.cvtColor(map, cv.COLOR_BGR2HSV)
+    red = cv.inRange(hsv, (0,50,50), (10,255,255))
+    blue = cv.inRange(hsv, (100,150,0), (140,255,255))
+    
+    h, w = red.shape[:2]
+    corners_red = []
+    corners_blue = []
+    for i in range(1, h-1):
+        for j in range(1, w-1):
+            if red[i+1, j] == 255 and red[i, j+1] == 255 and red[i-1, j] == 255 and red[i, j-1] == 255:
+                corners_red.append((j, i))
+            if blue[i+1, j] == 255 and blue[i, j+1] == 255 and blue[i-1, j] == 255 and blue[i, j-1] == 255:
+                corners_blue.append((j, i))
+
+    pts = np.zeros(map.shape, dtype='uint8')
+    for corner in corners_red:
+        cv.circle(pts, corner, 4, RED, 1)
+    for corner in corners_blue:
+        cv.circle(pts, corner, 4, BLUE, 1)
+
+    pts_scaled = cv.resize(pts, (480, 480))
     map_scaled = cv.resize(map, (480, 480))
+
+    print(idx)
+
+    cv.imshow('red', red)
+    cv.imshow('pts', pts)
+    cv.imshow('pts_scaled', pts_scaled)
+
 
     cv.imshow('hu', hu)
     cv.imshow('hl', hl)
@@ -137,7 +163,7 @@ def tof(idx, rotate: bool):
     cv.imshow('map', map)
     cv.imshow('data_orig_scaled', data_orig_scaled)
     cv.imshow('data_scaled', data_scaled)
-    cv.imshow('map_scaled', map_scaled)
+    cv.imshow(f'map_scaled', map_scaled)
     cv.imshow('binary', binary)
     cv.waitKey(0)
 
@@ -154,4 +180,5 @@ def draw_lines_tof():
 
 
 if __name__ == '__main__':
-    tof(3, False)
+    # tof(3, False)
+    draw_lines_tof()
