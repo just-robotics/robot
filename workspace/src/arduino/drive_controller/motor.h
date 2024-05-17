@@ -146,22 +146,20 @@ void Motor::spin() {
     float dt = (curr_time - prev_time_) / 1.0e6;
 
     velocity_ = 2 * 3.14 * (pose_ - prev_pose_) / dt / TPR;
+    
+    float n = cmd_vel_ / 2 / 3.14;
 
-    if (false) {
+    if (n == 0.0) {
+        target_ = pose_;
         setPwm(0, 0);
     }
     else {
-        float n = cmd_vel_ / 2 / 3.14;
-
         float position_change = n * dt * TPR;
-
         target_ += position_change;
-    
         float u = pid(dt, kp, ki, kd);
     
         uint8_t pwm = (uint8_t)fabs(u);
         pwm = pwm > 255 ? 255 : pwm;
-        // pwm = pwm < 40 ? 0 : pwm;
 
         int dir = u < 0 ? 1 : 0;
     
