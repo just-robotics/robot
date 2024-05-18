@@ -14,7 +14,7 @@
 #define MOTOR_0_ENCA          2 // YELLOW
 #define MOTOR_1_ENCA          3
 
-#define TPR             329.9125
+#define TPR          330.014286
 
 #define SERIAL_BAUDRATE 2000000
 #define START_BYTE           64
