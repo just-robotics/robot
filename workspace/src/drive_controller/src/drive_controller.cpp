@@ -48,8 +48,11 @@ private:
 
     size_t cmd_size_, pose_num_, pose_size_, vel_num_, vel_size_;
     size_t target_num_, target_size_;
-    double r_, l_, ticks_;
+    double r_, l_, kl_, ka_, ticks_;
     std::string frame_id_, child_frame_id_;
+    bool publish_odom_;
+    bool limit_vels_;
+    float max_x_vel_, max_yaw_vel_;
 
     std::vector<float> reset_X_, reset_P_, prev_X_, prev_P_;
 
@@ -74,6 +77,7 @@ private:
 
 
 DriveController::DriveController() : Node("drive_controller") {
+    this->declare_parameter("publish_odom", true);
     this->declare_parameter("odom_pub", "");
     this->declare_parameter("cmd_vel_sub", "");
     this->declare_parameter("serial_pub", "");
@@ -82,6 +86,8 @@ DriveController::DriveController() : Node("drive_controller") {
     this->declare_parameter("reset_sub", "");
     this->declare_parameter("r", 0.0);
     this->declare_parameter("l", 0.0);
+    this->declare_parameter("kl", 0.0);
+    this->declare_parameter("ka", 0.0);
     this->declare_parameter("ticks", 0.0);
     this->declare_parameter("frame_id", "");
     this->declare_parameter("child_frame_id", "");
@@ -96,7 +102,11 @@ DriveController::DriveController() : Node("drive_controller") {
     this->declare_parameter("vel_size", 0);
     this->declare_parameter("target_num", 0);
     this->declare_parameter("target_size", 0);
+    this->declare_parameter("limit_vels", false);
+    this->declare_parameter("max_x_vel", 0.0);
+    this->declare_parameter("max_yaw_vel", 0.0);
 
+    publish_odom_ = this->get_parameter("publish_odom").as_bool();
     std::string odom_pub_topic = this->get_parameter("odom_pub").as_string();
     std::string cmd_vel_sub_topic = this->get_parameter("cmd_vel_sub").as_string();
     std::string serial_pub_topic = this->get_parameter("serial_pub").as_string();
@@ -105,6 +115,8 @@ DriveController::DriveController() : Node("drive_controller") {
     std::string reset_sub_topic = this->get_parameter("reset_sub").as_string();
     r_ = this->get_parameter("r").as_double();
     l_ = this->get_parameter("l").as_double();
+    kl_ = this->get_parameter("kl").as_double();
+    ka_ = this->get_parameter("ka").as_double();
     ticks_ = this->get_parameter("ticks").as_double();
     frame_id_ = this->get_parameter("frame_id").as_string();
     child_frame_id_ = this->get_parameter("child_frame_id").as_string();
@@ -119,22 +131,28 @@ DriveController::DriveController() : Node("drive_controller") {
     vel_size_ = this->get_parameter("vel_size").as_int();
     target_num_ = this->get_parameter("target_num").as_int();
     target_size_ = this->get_parameter("target_size").as_int();
+    limit_vels_ = this->get_parameter("limit_vels").as_bool();
+    max_x_vel_ = this->get_parameter("max_x_vel").as_double();
+    max_yaw_vel_ = this->get_parameter("max_yaw_vel").as_double();
 
+    RCLCPP_INFO(this->get_logger(), "publish_odom: '%s'", publish_odom_ ? "true" : "false");
     RCLCPP_INFO(this->get_logger(), "odom_pub_topic: '%s'", odom_pub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "vel_sub_topic: '%s'", cmd_vel_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "serial_pub_topic: '%s'", serial_pub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "serial_sub_topic: '%s'", serial_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "pid_sub_topic: '%s'", pid_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "reset_sub_topic: '%s'", reset_sub_topic.c_str());
-    RCLCPP_INFO(this->get_logger(), "r: %lf", r_);
-    RCLCPP_INFO(this->get_logger(), "lx: %lf", l_);
-    RCLCPP_INFO(this->get_logger(), "ticks: %lf", ticks_);
+    RCLCPP_INFO(this->get_logger(), "r: %f", r_);
+    RCLCPP_INFO(this->get_logger(), "l: %f", l_);
+    RCLCPP_INFO(this->get_logger(), "kl: %f", kl_);
+    RCLCPP_INFO(this->get_logger(), "ka: %f", ka_);
+    RCLCPP_INFO(this->get_logger(), "ticks: %f", ticks_);
     RCLCPP_INFO(this->get_logger(), "frame_id: '%s'", frame_id_.c_str());
     RCLCPP_INFO(this->get_logger(), "child_frame_id: '%s'", child_frame_id_.c_str());
     RCLCPP_INFO(this->get_logger(), "reset_timeout: %ld", reset_timeout_);
-    RCLCPP_INFO(this->get_logger(), "kp: %lf", kp_);
-    RCLCPP_INFO(this->get_logger(), "ki: %lf", ki_);
-    RCLCPP_INFO(this->get_logger(), "kd: %lf", kd_);
+    RCLCPP_INFO(this->get_logger(), "kp: %f", kp_);
+    RCLCPP_INFO(this->get_logger(), "ki: %f", ki_);
+    RCLCPP_INFO(this->get_logger(), "kd: %f", kd_);
     RCLCPP_INFO(this->get_logger(), "cmd_size: %ld", cmd_size_);
     RCLCPP_INFO(this->get_logger(), "vel_num: %ld", pose_num_);
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", pose_size_);
@@ -142,9 +160,11 @@ DriveController::DriveController() : Node("drive_controller") {
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", vel_size_);
     RCLCPP_INFO(this->get_logger(), "vel_num: %ld", target_num_);
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", target_size_);
+    RCLCPP_INFO(this->get_logger(), "limit_vels: %s", (limit_vels_ ? "true" : "false"));
+    RCLCPP_INFO(this->get_logger(), "max_x_vel: %f", max_x_vel_);
+    RCLCPP_INFO(this->get_logger(), "max_yaw_vel: %f", max_yaw_vel_);
 
     serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10);
-    odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
 
     pose_pub_ = this->create_publisher<std_msgs::msg::Int64>("/dbg/pose", 10);
     target_pub_ = this->create_publisher<std_msgs::msg::Float32>("/dbg/target", 10);
@@ -155,7 +175,10 @@ DriveController::DriveController() : Node("drive_controller") {
     pid_sub_ = this->create_subscription<robot_msgs::msg::Float32Vector>(pid_sub_topic, 10, std::bind(&DriveController::pidCallback, this, _1));
     reset_sub_ = this->create_subscription<std_msgs::msg::Bool>(reset_sub_topic, 10, std::bind(&DriveController::resetOdomCallback, this, _1));
 
-    tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    if (publish_odom_) {
+        odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
+        tf2_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    }
 
     reset_X_ = {0, 0, 0};
     reset_P_ = {0, 0};
@@ -177,34 +200,35 @@ std::vector<float> DriveController::calcForwardKinematics(std::vector<float> V) 
     std::vector<float> W;
     W.resize(vel_num_);
 
-    W[0] = vx - wz * l_ / 2;
-    W[1] = vx + wz * l_ / 2;
+    W[0] = 2 * (vx - wz * l_ / 2) / r_;
+    W[1] = 2 * (vx + wz * l_ / 2) / r_;
 
     return W;
 }
 
 
 std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) {
-    // if (W.size() != vel_num_) {
-    //     RCLCPP_FATAL(this->get_logger(), "Wrong odom_velocities_size");
-    //     rclcpp::shutdown();
-    // }
+#if false
+    if (W.size() != vel_num_) {
+        RCLCPP_FATAL(this->get_logger(), "Wrong odom_velocities_size");
+        rclcpp::shutdown();
+    }
 
-    // float w0 = W[0];
-    // float w1 = W[1];
-    // float w2 = W[2];
-    // float w3 = W[3];
+    float w0 = W[0];
+    float w1 = W[1];
 
-    // std::vector<float> V;
-    // V.resize(GLOBAL_VELS_NUM_);
+    std::vector<float> V;
+    V.resize(GLOBAL_VELS_NUM_);
 
-    // V[0] = (+w0 + w1 + w2 + w3) * r_ / 4;
-    // V[1] = (-w0 + w1 + w2 - w3) * r_ / 4;
-    // V[2] = (-w0 + w1 - w2 + w3) * r_ / 4 / (lx_ + ly_);
+    V[0] = 0;
+    V[1] = 0;
+    V[2] = (w1 - w0) / l_;
 
-    // return V;
+    std::cout << w0 << " " << w1 << std::endl;
 
-    exit(-4);
+    return V;
+#endif
+    exit(1);
 }
 
 
@@ -215,7 +239,7 @@ std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
     }
 
     return P;
- }
+}
 
 
 std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
@@ -225,7 +249,7 @@ std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
     }
 
     return T;
- }
+}
 
 
 std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
@@ -242,8 +266,8 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
     float dpl = P[0] - prev_P_[0];
     float dpr = P[1] - prev_P_[1];
 
-    float ds = (dpr + dpl) * r_ / 2;
-    float dth = (dpr - dpl) * r_ / l_;
+    float ds = kl_ * (dpr + dpl) * r_ / 2;
+    float dth = ka_ * (dpr - dpl) * r_ / l_;
 
     float dx = ds * std::cos(dth);
     float dy = ds * std::sin(dth);
@@ -261,27 +285,28 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
 
 
 std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
-    // if (X.size() != GLOBAL_POSES_NUM_) {
-    //     RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
-    //     rclcpp::shutdown();
-    // }
+#if false
+    if (X.size() != GLOBAL_POSES_NUM_) {
+        RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
+        rclcpp::shutdown();
+    }
 
-    // float x = X[0];
-    // float y = X[1];
-    // float z = X[2];
+    float x = X[0];
+    float y = X[1];
+    float z = X[2];
 
-    // std::vector<float> P;
-    // P.resize(vel_num_);
+    std::vector<float> P;
+    P.resize(vel_num_);
 
-    // P[0] = (x - y - (lx_ + ly_) * z) / r_;
-    // P[1] = (x + y + (lx_ + ly_) * z) / r_;
-    // P[2] = (x + y - (lx_ + ly_) * z) / r_;
-    // P[3] = (x - y + (lx_ + ly_) * z) / r_;
+    P[0] = (x - y - (lx_ + ly_) * z) / r_;
+    P[1] = (x + y + (lx_ + ly_) * z) / r_;
+    P[2] = (x + y - (lx_ + ly_) * z) / r_;
+    P[3] = (x - y + (lx_ + ly_) * z) / r_;
 
-    // std::vector<int64_t> T = rads2ticks(P);
+    std::vector<int64_t> T = rads2ticks(P);
 
-    // return T;
-
+    return T;
+#endif
     exit(-4);
 }
 
@@ -318,6 +343,10 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     pose_pub_->publish(pose_msg);
     target_pub_->publish(target_msg);
 
+    if (!publish_odom_) {
+        return;
+    }
+
     auto odom = nav_msgs::msg::Odometry();
 
     odom.header.frame_id = frame_id_;
@@ -337,7 +366,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     odom.pose.pose.orientation.y = q.y();
     odom.pose.pose.orientation.z = q.z();
     odom.pose.pose.orientation.w = q.w();
-/*
+#if false
     std::vector<float> V = calcInverseKinematics(W);
 
     odom.twist.twist.linear.x = V[0];
@@ -347,7 +376,7 @@ void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     odom.twist.twist.angular.x = 0;
     odom.twist.twist.angular.y = 0;
     odom.twist.twist.angular.z = V[2];
-*/
+#endif
     odom_pub_->publish(odom);
 
     auto transform = geometry_msgs::msg::TransformStamped();
@@ -373,12 +402,22 @@ void DriveController::cmdVelCallback(const geometry_msgs::msg::Twist& msg) {
     auto serial_msg = robot_msgs::msg::UInt8Vector();
     serial_msg.data.resize(cmd_size_);
 
+    auto vel = msg;
+
+    if (limit_vels_) {
+        vel.linear.x = vel.linear.x > max_x_vel_ ? max_x_vel_ : vel.linear.x;
+        vel.angular.z = vel.angular.z > max_yaw_vel_ ? max_yaw_vel_ : vel.angular.z;
+        vel.linear.x = vel.linear.x < -max_x_vel_ ? -max_x_vel_ : vel.linear.x;
+        vel.angular.z = vel.angular.z < -max_yaw_vel_ ? -max_yaw_vel_ : vel.angular.z;
+    }
+    
     std::vector<float> V;
-    V.push_back(msg.linear.x);
-    V.push_back(msg.linear.y);
-    V.push_back(msg.angular.z);
+    V.push_back(vel.linear.x);
+    V.push_back(vel.linear.y);
+    V.push_back(vel.angular.z);
 
     std::vector<float> W = calcForwardKinematics(V);
+    std::cout << V[0] << " " << V[1] << " " << V[2] << " " << W[0] << " " << W[1] << std::endl;
 
     for (size_t i = 0; i < W.size(); i++) {
         std::memcpy(serial_msg.data.data() + i * vel_size_, W.data() + i, vel_size_);
