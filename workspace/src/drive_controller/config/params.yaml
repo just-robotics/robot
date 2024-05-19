@@ -10,25 +10,24 @@ drive_controller_serial:
 
 drive_controller:
     ros__parameters:
+        publish_odom: true                        # publishing odom if true
         odom_pub: /odom                            # output odometry topic
         cmd_vel_sub: /cmd_vel                      # input cmd_vel topic
         serial_pub: /serial/drive_controller/pub   # topic with motors velocities values in rad/s
         serial_sub: /serial/drive_controller/sub   # topic with odometry poses in ticks and odometry velocities in rad/s
         pid_sub: /drive_controller/pid             # topic with PID-terms from keyboard handler
         reset_sub: /drive_controller/reset         # odom reset topic from keyboard handler
-        
-        r: 0.032                                   # wheel radius
-        l: 0.237                                   # distance between wheels
-        ticks: 329.9125                            # number of ticks per one rotation
+        r: 0.032                                   # wheel radius 0.03239
+        l: 0.24                                    # distance between wheels 0.2418
+        kl: 1.01                                   # linear odometry scale coefficient
+        ka: 1.005                                  # angular odometry scale coefficient
+        ticks: 330.014286                          # number of ticks per one rotation
         frame_id: odom                             # odom frame id
         child_frame_id: base_footprint             # child frame id for odom frame
-
         reset_timeout: 2                           # reset timeout (in seconds) for odom reset from keyboard handler
-
         kp: 2.0                                    # P-term of PID regulator
         ki: 0.0                                    # I-term of PID regulator
         kd: 0.1                                    # D-term of PID regulator
-
         cmd_size: 21                               # cmd size
         pose_num: 2                                # number of poses in serial msg
         pose_size: 8                               # size of each pose in serial msg
@@ -36,14 +35,15 @@ drive_controller:
         vel_size: 4                                # size of each velocity in serial msg
         target_num: 2                              # number of targets in serial msg
         target_size: 4                             # size of each target in serial msg
+        limit_vels: false                          # limiting x and theta velocities if true
+        max_x_vel: 0.0                             # no limit if less than zero
+        max_yaw_vel: 0.0                           # no limit if less than zero
 
 keyboard_handler:
     ros__parameters:
         pid_pub: /drive_controller/pid             # topic with PID-terms from keyboard handler
         reset_pub: /drive_controller/reset         # odom reset topic from keyboard handler
-
         kp: 2.0                                    # P-term of PID regulator
         ki: 0.0                                    # I-term of PID regulator
         kd: 0.1                                    # D-term of PID regulator
-
         reset_timeout: 2                           # reset timeout (in seconds) for odom reset
