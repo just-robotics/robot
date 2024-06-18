@@ -417,7 +417,6 @@ void DriveController::cmdVelCallback(const geometry_msgs::msg::Twist& msg) {
     V.push_back(vel.angular.z);
 
     std::vector<float> W = calcForwardKinematics(V);
-    std::cout << V[0] << " " << V[1] << " " << V[2] << " " << W[0] << " " << W[1] << std::endl;
 
     for (size_t i = 0; i < W.size(); i++) {
         std::memcpy(serial_msg.data.data() + i * vel_size_, W.data() + i, vel_size_);
