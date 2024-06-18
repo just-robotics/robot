@@ -16,7 +16,9 @@ void setup() {
     digitalWrite(LED_BUILTIN, LOW);
 
     pinMode(A0, OUTPUT);
+    pinMode(A1, OUTPUT);
     analogWrite(A0, 255);
+    analogWrite(A1, 255);
 
     Motor::init();
 

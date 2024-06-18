@@ -1,8 +1,8 @@
-#define MOTOR_0_F_PIN 10
-#define MOTOR_0_B_PIN 9
+#define MOTOR_0_F_PIN 5
+#define MOTOR_0_B_PIN 6
 
-#define MOTOR_1_F_PIN 6
-#define MOTOR_1_B_PIN 5
+#define MOTOR_1_F_PIN 9
+#define MOTOR_1_B_PIN 10
 
 #define MOTOR_0_ENCB 4 // GREEN
 #define MOTOR_1_ENCB 7
@@ -49,7 +49,9 @@ void setup() {
     pinMode(MOTOR_1_ENCA, INPUT);
 
     pinMode(A0, OUTPUT);
+    pinMode(A1, OUTPUT);
     analogWrite(A0, 255);
+    analogWrite(A1, 255);
 
     pinMode(MOTOR_0_ENCB, INPUT);
     pinMode(MOTOR_1_ENCB, INPUT);

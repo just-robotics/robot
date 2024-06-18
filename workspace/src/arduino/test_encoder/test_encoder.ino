@@ -18,8 +18,11 @@ int64_t readEncoder() {
 void setup() {
     pinMode(ENCA, INPUT);
     pinMode(ENCB, INPUT);
+    
     pinMode(A0, OUTPUT);
+    pinMode(A1, OUTPUT);
     analogWrite(A0, 255);
+    analogWrite(A1, 255);
 
     attachInterrupt(digitalPinToInterrupt(ENCA), readEncoder, RISING);
     

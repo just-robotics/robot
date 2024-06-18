@@ -106,7 +106,9 @@ void setup() {
     pinMode(MOTOR_1_B_PIN, OUTPUT);
 
     pinMode(A0, OUTPUT);
+    pinMode(A1, OUTPUT);
     analogWrite(A0, 255);
+    analogWrite(A1, 255);
 
     attachInterrupt(digitalPinToInterrupt(MOTOR_0_ENCA), [] () {readEncoder(MOTOR_0_ENCB, &pose0);}, RISING);
     attachInterrupt(digitalPinToInterrupt(MOTOR_1_ENCA), [] () {readEncoder(MOTOR_1_ENCB, &pose1);}, RISING);
