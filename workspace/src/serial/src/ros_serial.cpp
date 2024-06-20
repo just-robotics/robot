@@ -1,4 +1,4 @@
-#include "../include/serial/ros_serial.hpp"
+#include "serial/ros_serial.hpp"
 
 
 RosSerial::RosSerial(std::string node_name) : Node(node_name) {

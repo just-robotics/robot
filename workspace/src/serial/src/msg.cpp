@@ -1,4 +1,4 @@
-#include "../include/serial/msg.hpp"
+#include "serial/msg.hpp"
 
 
 Msg::Msg() {
