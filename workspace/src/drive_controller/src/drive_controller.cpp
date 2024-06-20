@@ -206,9 +206,8 @@ std::vector<float> DriveController::calcForwardKinematics(std::vector<float> V) 
     return W;
 }
 
-
-std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) {
 #if false
+std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) {
     if (W.size() != vel_num_) {
         RCLCPP_FATAL(this->get_logger(), "Wrong odom_velocities_size");
         rclcpp::shutdown();
@@ -227,10 +226,8 @@ std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) 
     std::cout << w0 << " " << w1 << std::endl;
 
     return V;
-#endif
-    exit(1);
 }
-
+#endif
 
 std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
     std::vector<float> P;
@@ -283,9 +280,8 @@ std::vector<float> DriveController::calcGlobalPose(std::vector<int64_t> T) {
     return X;
 }
 
-
-std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
 #if false
+std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
     if (X.size() != GLOBAL_POSES_NUM_) {
         RCLCPP_FATAL(this->get_logger(), "Wrong global_poses_num");
         rclcpp::shutdown();
@@ -306,10 +302,8 @@ std::vector<int64_t> DriveController::calcLocalPose(std::vector<float> X) {
     std::vector<int64_t> T = rads2ticks(P);
 
     return T;
-#endif
-    exit(-4);
 }
-
+#endif
 
 void DriveController::odomCallback(const robot_msgs::msg::UInt8Vector& msg) {
     std::vector<int64_t> P;
