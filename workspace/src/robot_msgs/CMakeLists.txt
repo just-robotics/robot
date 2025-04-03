@@ -10,8 +10,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Float32Vector.msg"
-  "msg/Odom.msg"
-  "msg/UInt8Vector.msg"
+  "msg/Int64Vector.msg"
 )
 
 ament_package()
