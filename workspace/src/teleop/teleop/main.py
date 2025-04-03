@@ -119,7 +119,7 @@ def main():
     spinner.start()
 
     speed = 0.2
-    turn = 0.5
+    turn = 1.0
     x = 0.0
     y = 0.0
     z = 0.0
