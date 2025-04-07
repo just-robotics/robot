@@ -1,5 +1,5 @@
 .vscode
-workspace/build
-workspace/install
-workspace/log
-__pycache__/
+build
+install
+log
+__pycache__

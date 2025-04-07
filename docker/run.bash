@@ -15,6 +15,7 @@ docker run  -d -ti --rm \
             -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
             -v /etc/localtime:/etc/localtime:ro \
             -v ${SIM_ROOT}/workspace:/workspace \
+            -v ${SIM_ROOT}/microros_ws:/microros_ws \
             --net=host \
             --privileged \
             --name "robot" "robot"  \
