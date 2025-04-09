@@ -8,7 +8,7 @@ xhost +local:docker > /dev/null || true
 
 ### DOCKER RUN ----------------------------------------------------------- #
 
-docker run  -d -ti --rm \
+docker run  -d -ti \
             -e "DISPLAY" \
             -e "QT_X11_NO_MITSHM=1" \
             -e XAUTHORITY \
@@ -18,5 +18,6 @@ docker run  -d -ti --rm \
             -v ${SIM_ROOT}/microros_ws:/microros_ws \
             --net=host \
             --privileged \
+            --restart always \
             --name "robot" "robot"  \
             > /dev/null

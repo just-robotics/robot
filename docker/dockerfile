@@ -5,8 +5,9 @@ FROM althack/ros2:humble-full
 ENV WS="/workspace"
 ENV WS_drivers_stm="/microros_ws"
 
-ENV ROS_DISTRO humble
+ENV ROS_DISTRO=humble
 RUN echo "source ${WS}/install/setup.bash" >> ~/.bashrc
+RUN echo "source ${WS_drivers_stm}/install/local_setup.bash" >> ~/.bashrc
 RUN echo "cd /workspace" >> ~/.bashrc
 
 # install packages
@@ -24,3 +25,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-nav2-bringup
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rtabmap-ros
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
+
+COPY entrypoint.sh /entrypoint.bash
+RUN chmod +x /entrypoint.bash
+
+ENTRYPOINT ["/entrypoint.bash"]
