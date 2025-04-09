@@ -10,10 +10,10 @@ from uwb_package.submodules.readSensorData import readSensorData, openSerialPort
 
 class UWBCoordsStreamer(Node):
     def __init__(self):
-        super().__init__('uwb_streamer')
+        super().__init__('uwb_node')
 
-        self.declare_parameter('port', '/dev/ttyUSB0')
-        self.declare_parameter('baudrate', 9000)
+        self.declare_parameter('port', '')
+        self.declare_parameter('baudrate', 0)
 
         self.port = self.get_parameter('port').get_parameter_value().string_value
         self.baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
@@ -47,13 +47,7 @@ class UWBCoordsStreamer(Node):
             msg.point.z = data[2]
             msg.header.stamp = self.get_clock().now().to_msg()
             self.publisher_.publish(msg)
-            self.get_logger().info(f'UWB published data')
-        else:
-            msg.point.x = -100
-            msg.point.y = -100
-            msg.point.z = -100
-            msg.header.stamp = self.get_clock().now().to_msg()
-            self.publisher_.publish(msg)
+            self.get_logger().info(f'[{msg.point.x} {msg.point.y}]')
 
 
 def main(args=None):
@@ -65,7 +59,4 @@ def main(args=None):
 
     uwb_publisher.destroy_node()
     rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+    
