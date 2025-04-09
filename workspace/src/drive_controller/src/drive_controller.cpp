@@ -160,8 +160,8 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     pid_sub_ = this->create_subscription<robot_msgs::msg::Float32Vector>(pid_sub_topic, 10, std::bind(&DriveController::pidCallback, this, _1));
     reset_sub_ = this->create_subscription<std_msgs::msg::Bool>(reset_sub_topic, 10, std::bind(&DriveController::resetOdomCallback, this, _1));
 
-    reset_X_ = {0, 0, 0};
-    reset_P_ = {0, 0};
+    reset_X_ = {0., 0., 0.};
+    reset_P_ = {0., 0.};
 
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
@@ -175,8 +175,8 @@ std::vector<float> DriveController::calcForwardKinematics(const std::vector<floa
     std::vector<float> W;
     W.resize(2);
 
-    W[0] = (vx - wz * l_ / 2) / r_;
-    W[1] = (vx + wz * l_ / 2) / r_;
+    W[0] = (vx - wz * l_ / 2.) / r_;
+    W[1] = (vx + wz * l_ / 2.) / r_;
 
     return W;
 }
@@ -195,7 +195,7 @@ std::vector<float> DriveController::ticks2rads(const std::vector<int64_t>& T) {
 std::vector<int64_t> DriveController::rads2ticks(const std::vector<float>& P) {
     std::vector<int64_t> T;
     for (size_t i = 0; i < P.size(); i++) {
-        T.push_back(P[i] * ticks_ / 2 / std::numbers::pi);
+        T.push_back(P[i] * ticks_ / 2. / std::numbers::pi);
     }
 
     return T;
@@ -258,10 +258,10 @@ void DriveController::odomCallback(const robot_msgs::msg::Int64Vector& msg) {
 
     odom.pose.pose.position.x = X[0];
     odom.pose.pose.position.y = X[1];
-    odom.pose.pose.position.z = 0;
+    odom.pose.pose.position.z = 0.;
 
     tf2::Quaternion q;
-    q.setRPY(0, 0, X[2]);
+    q.setRPY(0., 0., X[2]);
 
     odom.pose.pose.orientation.x = q.x();
     odom.pose.pose.orientation.y = q.y();
