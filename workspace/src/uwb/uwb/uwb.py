@@ -1,11 +1,11 @@
 import rclpy
 import time
 import serial
-from rclpy.node import Node
 
+from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 
-from uwb_package.submodules.readSensorData import readSensorData, openSerialPort
+from .submodules.read_sensor_data import read_sensor_data, open_serial_port
 
 
 class UWBCoordsStreamer(Node):
@@ -18,11 +18,15 @@ class UWBCoordsStreamer(Node):
         self.port = self.get_parameter('port').get_parameter_value().string_value
         self.baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
 
-        self.get_logger().info(f"port: {self.port}")
-        self.get_logger().info(f"baudrate: {self.baudrate}")
+        self.get_logger().info(f'port: {self.port}')
+        self.get_logger().info(f'baudrate: {self.baudrate}')
 
-        self.ser = serial.Serial(self.port, self.baudrate)
-        openSerialPort(self.ser)
+        self.timeout = 0.1
+        self.ser = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
+        
+        self.get_logger().info(f'after serial init')
+        
+        open_serial_port(self.ser)
         if self.ser.is_open:
             self.get_logger().info(f'Serial {self.port} is opened')
         else:
@@ -30,24 +34,21 @@ class UWBCoordsStreamer(Node):
         
         self.waiting_time = time.time()
 
-        self.publisher_ = self.create_publisher(
-            PointStamped,
-            'uwb_coordinates',
-            10
-        )
+        self.publisher_ = self.create_publisher(PointStamped, 'uwb_coordinates', 10)
+
         timer_period = 0.001
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
         msg = PointStamped()
-        data = readSensorData(self.ser)
+        data = read_sensor_data(self.ser)
         if data is not None:
             msg.point.x = data[0]
             msg.point.y = data[1]
             msg.point.z = data[2]
             msg.header.stamp = self.get_clock().now().to_msg()
             self.publisher_.publish(msg)
-            self.get_logger().info(f'[{msg.point.x} {msg.point.y}]')
+            self.get_logger().info(f'[{msg.point.x}, {msg.point.y}, {msg.point.z}]')
 
 
 def main(args=None):
