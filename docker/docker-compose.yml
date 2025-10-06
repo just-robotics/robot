@@ -1,0 +1,39 @@
+services:
+  ros2:
+    build: .
+    image: ros2_humble
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../workspace:/workspace
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+
+  ros2-builder:
+    build: .
+    image: ros2_humble
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../workspace:/workspace
+      - ../microros_ws:/microros_ws
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+
+    entrypoint: []
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped

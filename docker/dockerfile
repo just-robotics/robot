@@ -2,12 +2,22 @@ FROM althack/ros2:humble-full
 
 # workspace setup
 
-ENV WS="/workspace"
-ENV WS_drivers_stm="/microros_ws"
-
 ENV ROS_DISTRO=humble
-RUN echo "source ${WS}/install/setup.bash" >> ~/.bashrc
-RUN echo "source ${WS_drivers_stm}/install/local_setup.bash" >> ~/.bashrc
+
+ENV WS="/workspace"
+# ENV WS_drivers_stm="/microros_ws"
+
+RUN if [ -f "${WS}/install/setup.bash" ]; then \
+        echo "source ${WS}/install/setup.bash" >> /root/.bashrc; \
+    fi
+
+RUN if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then \
+        echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc; \
+    fi
+
+# RUN echo "source ${WS_drivers_stm}/install/local_setup.bash" >> ~/.bashrc
+RUN echo "alias s='. ./install/setup.bash'" >> ~/.bashrc
+RUN echo "alias l='clear'" >> ~/.bashrc
 RUN echo "cd /workspace" >> ~/.bashrc
 
 # install packages
@@ -15,9 +25,11 @@ RUN echo "cd /workspace" >> ~/.bashrc
 RUN apt update -y
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-pip
-RUN DEBIAN_FRONTEND=noninteractive apt install -y vim emacs nano
+RUN DEBIAN_FRONTEND=noninteractive apt install -y vim nano
 
 RUN python3 -m pip install setuptools==58.2.0
+
+RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-colcon-common-extensions
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-slam-toolbox
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-navigation2
@@ -26,7 +38,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rtabmap-ros
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
 
-COPY entrypoint.sh /entrypoint.bash
-RUN chmod +x /entrypoint.bash
-
-ENTRYPOINT ["/entrypoint.bash"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
