@@ -6,7 +6,6 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 
-
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -23,23 +22,22 @@ using std::placeholders::_1;
 
 class DriveController : public rclcpp::Node {
 private:
-    float kp_, ki_, kd_;
-
     rclcpp::Subscription<std_msgs::msg::Int64>::SharedPtr ticks_left_sub_;
     rclcpp::Subscription<std_msgs::msg::Int64>::SharedPtr ticks_right_sub_;
-    rclcpp::Subscription<robot_msgs::msg::Int64Vector>::SharedPtr ticks_sub_;
-    rclcpp::Publisher<robot_msgs::msg::Int64Vector>::SharedPtr ticks_pub_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 
     rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr cmv_vel_left_pub_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr cmv_vel_right_pub_;
 
+#if false
     rclcpp::Subscription<robot_msgs::msg::Float32Vector>::SharedPtr pid_sub_;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reset_sub_;
-
+#endif
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf2_broadcaster_;
+
+    float kp_, ki_, kd_;
 
     double r_, l_, kl_, ka_, ticks_;
     std::string frame_id_, child_frame_id_;
@@ -54,8 +52,6 @@ public:
     DriveController();
 
 private:
-    std::vector<float> calcForwardKinematics(const std::vector<float>& V);
-
     std::vector<float> ticks2rads(const std::vector<int64_t>& T);
     std::vector<int64_t> rads2ticks(const std::vector<float>& P);
 
@@ -65,53 +61,56 @@ private:
     void ticksRightCallback(const std_msgs::msg::Int64& msg);
     void odomCallback(const robot_msgs::msg::Int64Vector& msg);
     void cmdVelCallback(const geometry_msgs::msg::Twist& msg);
+#if false
     void pidCallback(const robot_msgs::msg::Float32Vector& msg);
     void resetOdomCallback(const std_msgs::msg::Bool& msg);
+#endif
 };
 
 
 DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, ticks_r_{0} {
-    this->declare_parameter("publish_odom", true);
-    this->declare_parameter("odom_pub", "");
-    this->declare_parameter("cmd_vel_sub", "");
-    this->declare_parameter("cmd_vel_pub_left_topic", "");
-    this->declare_parameter("cmd_vel_pub_right_topic", "");
-    this->declare_parameter("pid_sub", "");
-    this->declare_parameter("reset_sub", "");
-    this->declare_parameter("ticks_left_topic", "");
-    this->declare_parameter("ticks_right_topic", "");
-    this->declare_parameter("ticks_topic", "");
-    this->declare_parameter("r", 0.0);
-    this->declare_parameter("l", 0.0);
-    this->declare_parameter("kl", 0.0);
-    this->declare_parameter("ka", 0.0);
-    this->declare_parameter("ticks", 0.0);
-    this->declare_parameter("frame_id", "");
-    this->declare_parameter("child_frame_id", "");
-    this->declare_parameter("kp", 0.0);
-    this->declare_parameter("ki", 0.0);
-    this->declare_parameter("kd", 0.0);
-    this->declare_parameter("limit_vels", false);
-    this->declare_parameter("max_x_vel", 0.0);
-    this->declare_parameter("max_yaw_vel", 0.0);
+    this->declare_parameter("publish_odom", rclcpp::PARAMETER_BOOL);
+    this->declare_parameter("odom_pub", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("cmd_vel_sub", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("cmd_vel_pub_left_topic", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("cmd_vel_pub_right_topic", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("ticks_left_topic", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("ticks_right_topic", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("r", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("l", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("kl", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("ka", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("ticks", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("frame_id", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("child_frame_id", rclcpp::PARAMETER_STRING);
+    this->declare_parameter("kp", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("ki", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("kd", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("limit_vels", rclcpp::PARAMETER_BOOL);
+    this->declare_parameter("max_x_vel", rclcpp::PARAMETER_DOUBLE);
+    this->declare_parameter("max_yaw_vel", rclcpp::PARAMETER_DOUBLE);
+
+    std::string ns = this->get_namespace();
 
     publish_odom_ = this->get_parameter("publish_odom").as_bool();
-    std::string odom_pub_topic = this->get_parameter("odom_pub").as_string();
-    std::string cmd_vel_sub_topic = this->get_parameter("cmd_vel_sub").as_string();
-    std::string cmd_vel_pub_left_topic = this->get_parameter("cmd_vel_pub_left_topic").as_string();
-    std::string cmd_vel_pub_right_topic = this->get_parameter("cmd_vel_pub_right_topic").as_string();
-    std::string pid_sub_topic = this->get_parameter("pid_sub").as_string();
-    std::string reset_sub_topic = this->get_parameter("reset_sub").as_string();
-    std::string ticks_left_topic = this->get_parameter("ticks_left_topic").as_string();
-    std::string ticks_right_topic = this->get_parameter("ticks_right_topic").as_string();
-    std::string ticks_topic = this->get_parameter("ticks_topic").as_string();
+    std::string odom_pub_topic = ns + std::string{"/"} + this->get_parameter("odom_pub").as_string();
+    std::string cmd_vel_sub_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_sub").as_string();
+    std::string cmd_vel_pub_left_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_pub_left_topic").as_string();
+    std::string cmd_vel_pub_right_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_pub_right_topic").as_string();
+#if false
+    std::string pid_sub_topic = ns + std::string{"/"} + this->get_parameter("pid_sub").as_string();
+    std::string reset_sub_topic = ns + std::string{"/"} + this->get_parameter("reset_sub").as_string();
+#endif
+    std::string ticks_left_topic = ns + std::string{"/"} + this->get_parameter("ticks_left_topic").as_string();
+    std::string ticks_right_topic = ns + std::string{"/"} + this->get_parameter("ticks_right_topic").as_string();
+
     r_ = this->get_parameter("r").as_double();
     l_ = this->get_parameter("l").as_double();
     kl_ = this->get_parameter("kl").as_double();
     ka_ = this->get_parameter("ka").as_double();
     ticks_ = this->get_parameter("ticks").as_double();
     frame_id_ = this->get_parameter("frame_id").as_string();
-    child_frame_id_ = this->get_parameter("child_frame_id").as_string();
+    child_frame_id_ = ns + std::string{"/"} + this->get_parameter("child_frame_id").as_string();
     kp_ = this->get_parameter("kp").as_double();
     ki_ = this->get_parameter("ki").as_double();
     kd_ = this->get_parameter("kd").as_double();
@@ -124,11 +123,12 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     RCLCPP_INFO(this->get_logger(), "vel_sub_topic: '%s'", cmd_vel_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "cmd_vel_pub_left_topic: '%s'", cmd_vel_pub_left_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "cmd_vel_pub_right_topic: '%s'", cmd_vel_pub_right_topic.c_str());
+#if false
     RCLCPP_INFO(this->get_logger(), "pid_sub_topic: '%s'", pid_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "reset_sub_topic: '%s'", reset_sub_topic.c_str());
+#endif
     RCLCPP_INFO(this->get_logger(), "ticks_left_topic: '%s'", ticks_left_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "ticks_right_topic: '%s'", ticks_right_topic.c_str());
-    RCLCPP_INFO(this->get_logger(), "ticks_topic: '%s'", ticks_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "r: %f", r_);
     RCLCPP_INFO(this->get_logger(), "l: %f", l_);
     RCLCPP_INFO(this->get_logger(), "kl: %f", kl_);
@@ -145,7 +145,6 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
 
     ticks_left_sub_ = this->create_subscription<std_msgs::msg::Int64>(ticks_left_topic, 10, std::bind(&DriveController::ticksLeftCallback, this, _1));
     ticks_right_sub_ = this->create_subscription<std_msgs::msg::Int64>(ticks_right_topic, 10, std::bind(&DriveController::ticksRightCallback, this, _1));
-    ticks_pub_ = this->create_publisher<robot_msgs::msg::Int64Vector>(ticks_topic, 10);
 
     if (publish_odom_) {
         odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
@@ -157,28 +156,16 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     cmv_vel_left_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_left_topic, 10);
     cmv_vel_right_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_right_topic, 10);
 
+#if false
     pid_sub_ = this->create_subscription<robot_msgs::msg::Float32Vector>(pid_sub_topic, 10, std::bind(&DriveController::pidCallback, this, _1));
     reset_sub_ = this->create_subscription<std_msgs::msg::Bool>(reset_sub_topic, 10, std::bind(&DriveController::resetOdomCallback, this, _1));
+#endif
 
     reset_X_ = {0., 0., 0.};
     reset_P_ = {0., 0.};
 
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
-}
-
-
-std::vector<float> DriveController::calcForwardKinematics(const std::vector<float>& V) {
-    float vx = V[0];
-    float wz = V[2];
-
-    std::vector<float> W;
-    W.resize(2);
-
-    W[0] = (vx - wz * l_ / 2.) / r_;
-    W[1] = (vx + wz * l_ / 2.) / r_;
-
-    return W;
 }
 
 
@@ -304,34 +291,35 @@ void DriveController::cmdVelCallback(const geometry_msgs::msg::Twist& msg) {
 
     if (limit_vels_) {
         vel.linear.x = vel.linear.x > max_x_vel_ ? max_x_vel_ : vel.linear.x;
-        vel.angular.z = vel.angular.z > max_yaw_vel_ ? max_yaw_vel_ : vel.angular.z;
         vel.linear.x = vel.linear.x < -max_x_vel_ ? -max_x_vel_ : vel.linear.x;
+
+        vel.angular.z = vel.angular.z > max_yaw_vel_ ? max_yaw_vel_ : vel.angular.z;
         vel.angular.z = vel.angular.z < -max_yaw_vel_ ? -max_yaw_vel_ : vel.angular.z;
     }
 
-    std::vector<float> V;
-    V.push_back(vel.linear.x);
-    V.push_back(vel.linear.y);
-    V.push_back(vel.angular.z);
+    auto& vx = vel.linear.x;
+    auto& wz = vel.angular.z;
 
-    std::vector<float> W = calcForwardKinematics(V);
+    float wl = (vx - wz * l_ / 2.) / r_;
+    float wr = (vx + wz * l_ / 2.) / r_;
 
     std_msgs::msg::Float32 msg_w;
 
-    msg_w.data = W[0];
+    msg_w.data = wl;
     cmv_vel_left_pub_->publish(msg_w);
 
-    msg_w.data = W[1];
+    msg_w.data = wr;
     cmv_vel_right_pub_->publish(msg_w);
 }
 
 
+#if false
 void DriveController::pidCallback(const robot_msgs::msg::Float32Vector& msg) {
-    // kp_ = msg.data[0];
-    // ki_ = msg.data[1];
-    // kd_ = msg.data[2];
+    kp_ = msg.data[0];
+    ki_ = msg.data[1];
+    kd_ = msg.data[2];
 
-    // cmdVelCallback(geometry_msgs::msg::Twist());
+    cmdVelCallback(geometry_msgs::msg::Twist());
 }
 
 
@@ -343,6 +331,7 @@ void DriveController::resetOdomCallback(const std_msgs::msg::Bool& msg) {
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
 }
+#endif
 
 
 int main(int argc, char * argv[]) {
