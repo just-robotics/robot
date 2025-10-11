@@ -183,6 +183,9 @@ C_SOURCES += micro_ros_stm32cubemx_utils/extra_sources/microros_time.c
 # Set here the custom transport implementation
 C_SOURCES += micro_ros_stm32cubemx_utils/extra_sources/microros_transports/dma_transport.c
 
+# Set robot id for namespace generation
+CFLAGS += -DROBOT_ID=$(ROBOT_ID)
+
 print_cflags:
 	@echo $(CFLAGS)
 

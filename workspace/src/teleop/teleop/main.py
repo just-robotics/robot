@@ -1,4 +1,5 @@
 import sys
+import time
 import threading
 
 import geometry_msgs.msg
@@ -91,12 +92,27 @@ def vels(speed, turn):
     return 'currently:\tspeed %s\tturn %s ' % (round(speed, 2), round(turn, 2))
 
 
+def get_teleop_name(base_name):
+    temp_node = rclpy.create_node('_teleop_index_helper')
+    time.sleep(0.5)
+    node_names_and_ns = temp_node.get_node_names_and_namespaces()
+    temp_node.destroy_node()
+
+    existing_names = [n for n, ns in node_names_and_ns if n.startswith(base_name)]
+
+    index = 1
+    while f"{base_name}_{index}" in existing_names:
+        index += 1
+
+    return f"{base_name}_{index}"
+
+
 def main():
     settings = saveTerminalSettings()
 
     rclpy.init()
 
-    node = rclpy.create_node('robot_teleop')
+    node = rclpy.create_node(get_teleop_name(base_name='robot_teleop'))
 
     # parameters
     stamped = node.declare_parameter('stamped', False).value

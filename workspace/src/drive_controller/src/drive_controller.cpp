@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <numbers>
@@ -32,8 +33,8 @@ private:
 
 #if false
     rclcpp::Subscription<robot_msgs::msg::Float32Vector>::SharedPtr pid_sub_;
-    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reset_sub_;
 #endif
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reset_sub_;
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf2_broadcaster_;
 
@@ -52,6 +53,8 @@ public:
     DriveController();
 
 private:
+    void delay(uint64_t ms);
+    
     std::vector<float> ticks2rads(const std::vector<int64_t>& T);
     std::vector<int64_t> rads2ticks(const std::vector<float>& P);
 
@@ -63,8 +66,10 @@ private:
     void cmdVelCallback(const geometry_msgs::msg::Twist& msg);
 #if false
     void pidCallback(const robot_msgs::msg::Float32Vector& msg);
-    void resetOdomCallback(const std_msgs::msg::Bool& msg);
 #endif
+    void resetOdomCallback(const std_msgs::msg::Bool& msg);
+
+    std::string join_ns_topic(const std::string& ns, const std::string& topic);
 };
 
 
@@ -74,6 +79,10 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     this->declare_parameter("cmd_vel_sub", rclcpp::PARAMETER_STRING);
     this->declare_parameter("cmd_vel_pub_left_topic", rclcpp::PARAMETER_STRING);
     this->declare_parameter("cmd_vel_pub_right_topic", rclcpp::PARAMETER_STRING);
+#if false
+    this->declare_parameter("pid_sub_topic", rclcpp::PARAMETER_STRING);
+#endif
+    this->declare_parameter("reset_sub_topic", rclcpp::PARAMETER_STRING);
     this->declare_parameter("ticks_left_topic", rclcpp::PARAMETER_STRING);
     this->declare_parameter("ticks_right_topic", rclcpp::PARAMETER_STRING);
     this->declare_parameter("r", rclcpp::PARAMETER_DOUBLE);
@@ -93,16 +102,17 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     std::string ns = this->get_namespace();
 
     publish_odom_ = this->get_parameter("publish_odom").as_bool();
-    std::string odom_pub_topic = ns + std::string{"/"} + this->get_parameter("odom_pub").as_string();
-    std::string cmd_vel_sub_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_sub").as_string();
-    std::string cmd_vel_pub_left_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_pub_left_topic").as_string();
-    std::string cmd_vel_pub_right_topic = ns + std::string{"/"} + this->get_parameter("cmd_vel_pub_right_topic").as_string();
+
+    std::string odom_pub_topic = join_ns_topic(ns, this->get_parameter("odom_pub").as_string());
+    std::string cmd_vel_sub_topic = join_ns_topic(ns, this->get_parameter("cmd_vel_sub").as_string());
+    std::string cmd_vel_pub_left_topic = join_ns_topic(ns, this->get_parameter("cmd_vel_pub_left_topic").as_string());
+    std::string cmd_vel_pub_right_topic = join_ns_topic(ns, this->get_parameter("cmd_vel_pub_right_topic").as_string());
 #if false
-    std::string pid_sub_topic = ns + std::string{"/"} + this->get_parameter("pid_sub").as_string();
-    std::string reset_sub_topic = ns + std::string{"/"} + this->get_parameter("reset_sub").as_string();
+    std::string pid_sub_topic = join_ns_topic(ns, this->get_parameter("pid_sub_topic").as_string());
 #endif
-    std::string ticks_left_topic = ns + std::string{"/"} + this->get_parameter("ticks_left_topic").as_string();
-    std::string ticks_right_topic = ns + std::string{"/"} + this->get_parameter("ticks_right_topic").as_string();
+    std::string reset_sub_topic = join_ns_topic(ns, this->get_parameter("reset_sub_topic").as_string());
+    std::string ticks_left_topic = join_ns_topic(ns, this->get_parameter("ticks_left_topic").as_string());
+    std::string ticks_right_topic = join_ns_topic(ns, this->get_parameter("ticks_right_topic").as_string());
 
     r_ = this->get_parameter("r").as_double();
     l_ = this->get_parameter("l").as_double();
@@ -125,8 +135,8 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
     RCLCPP_INFO(this->get_logger(), "cmd_vel_pub_right_topic: '%s'", cmd_vel_pub_right_topic.c_str());
 #if false
     RCLCPP_INFO(this->get_logger(), "pid_sub_topic: '%s'", pid_sub_topic.c_str());
-    RCLCPP_INFO(this->get_logger(), "reset_sub_topic: '%s'", reset_sub_topic.c_str());
 #endif
+    RCLCPP_INFO(this->get_logger(), "reset_sub_topic: '%s'", reset_sub_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "ticks_left_topic: '%s'", ticks_left_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "ticks_right_topic: '%s'", ticks_right_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "r: %f", r_);
@@ -153,19 +163,27 @@ DriveController::DriveController() : Node("drive_controller"), ticks_l_{0}, tick
 
     cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_sub_topic, 10, std::bind(&DriveController::cmdVelCallback, this, _1));
 
-    cmv_vel_left_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_left_topic, 10);
-    cmv_vel_right_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_right_topic, 10);
+    rclcpp::QoS qos(1);
+    qos.reliable();
+
+    cmv_vel_left_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_left_topic, qos);
+    cmv_vel_right_pub_ = this->create_publisher<std_msgs::msg::Float32>(cmd_vel_pub_right_topic, qos);
 
 #if false
     pid_sub_ = this->create_subscription<robot_msgs::msg::Float32Vector>(pid_sub_topic, 10, std::bind(&DriveController::pidCallback, this, _1));
-    reset_sub_ = this->create_subscription<std_msgs::msg::Bool>(reset_sub_topic, 10, std::bind(&DriveController::resetOdomCallback, this, _1));
 #endif
+    reset_sub_ = this->create_subscription<std_msgs::msg::Bool>(reset_sub_topic, 10, std::bind(&DriveController::resetOdomCallback, this, _1));
 
     reset_X_ = {0., 0., 0.};
     reset_P_ = {0., 0.};
 
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
+}
+
+
+void DriveController::delay(uint64_t ms) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 
@@ -303,13 +321,13 @@ void DriveController::cmdVelCallback(const geometry_msgs::msg::Twist& msg) {
     float wl = (vx - wz * l_ / 2.) / r_;
     float wr = (vx + wz * l_ / 2.) / r_;
 
-    std_msgs::msg::Float32 msg_w;
+    std_msgs::msg::Float32 msg_l, msg_r;
 
-    msg_w.data = wl;
-    cmv_vel_left_pub_->publish(msg_w);
+    msg_l.data = wl;
+    cmv_vel_left_pub_->publish(msg_l);
 
-    msg_w.data = wr;
-    cmv_vel_right_pub_->publish(msg_w);
+    msg_r.data = wr;
+    cmv_vel_right_pub_->publish(msg_r);
 }
 
 
@@ -321,6 +339,7 @@ void DriveController::pidCallback(const robot_msgs::msg::Float32Vector& msg) {
 
     cmdVelCallback(geometry_msgs::msg::Twist());
 }
+#endif
 
 
 void DriveController::resetOdomCallback(const std_msgs::msg::Bool& msg) {
@@ -328,10 +347,24 @@ void DriveController::resetOdomCallback(const std_msgs::msg::Bool& msg) {
         return;
     }
 
+    delay(500);
+
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
+
+    RCLCPP_INFO(this->get_logger(), "ODOMETRY RESET");
 }
-#endif
+
+
+std::string DriveController::join_ns_topic(const std::string& ns, const std::string& topic) {
+    if (ns.empty() || ns == "/") {
+        return topic;
+    } else if (ns.back() == '/') {
+        return ns + topic;
+    } else {
+        return ns + "/" + topic;
+    }
+}
 
 
 int main(int argc, char * argv[]) {

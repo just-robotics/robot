@@ -7,8 +7,8 @@
         cmd_vel_pub_right_topic: drive_controller/cmd_vel_r  # output cmd_vel_right topic
         ticks_left_topic: drive_controller/ticks_left        # output topic with motors velocities values in rad/s
         ticks_right_topic: drive_controller/ticks_right      # output topic with odometry poses in ticks and odometry velocities in rad/s
-        # pid_sub: drive_controller/pid                      # topic with PID-terms from keyboard handler
-        # reset_sub: drive_controller/reset                  # odom reset topic from keyboard handler
+        # pid_sub_topic: drive_controller/pid                # topic with PID-terms from keyboard handler
+        reset_sub_topic: drive_controller/reset              # odom reset topic from keyboard handler
         r: 0.0323                                            # wheel radius 0.03239
         l: 0.2437                                            # distance between wheels 0.24
         kl: 1.0                                              # linear odometry scale coefficient 0.96
@@ -22,7 +22,3 @@
         limit_vels: false                                    # limiting x and theta velocities if true
         max_x_vel: 0.0                                       # linear velocity limit
         max_yaw_vel: 0.0                                     # angular velocity limit
-
-# keyboard_handler:
-#     ros__parameters:
-#         reset_timeout: 2                                   # reset timeout (in seconds) for odom reset

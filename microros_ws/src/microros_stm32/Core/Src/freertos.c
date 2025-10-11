@@ -23,6 +23,11 @@
 #include "robot.h"
 
 
+#ifndef ROBOT_ID
+#define ROBOT_ID -1
+#endif
+
+
 typedef StaticTask_t osStaticThreadDef_t;
 
 osThreadId_t defaultTaskHandle;
@@ -138,89 +143,32 @@ void StartDefaultTask(void* argument) {
 	rclc_support_init(&support, 0, NULL, &allocator);
 
 	rcl_node_t node;
-	rclc_node_init_default(&node, "stm32_node", "", &support);
+    char namespace[32];
+    snprintf(namespace, sizeof(namespace), "robot%d", ROBOT_ID);
+	rclc_node_init_default(&node, "stm32_node", namespace, &support);
 
     rclc_timer_init_default(&cmd_vel_timer, &support, timer_period_25_ms, cmdVelTimerCallback);
     rclc_timer_init_default(&odom_timer, &support, timer_period_10_ms, odomTimerCallback);
 
-    {
-        std_msgs__msg__Float32 msg;
-	    rclc_subscription_init_default(
-	    	&subscriber_cmd_vel_l,
-	    	&node,
-	    	ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
-	    	"cmd_vel_l");
-    }
+	rclc_subscription_init_default(&subscriber_cmd_vel_l, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "drive_controller/cmd_vel_l");
+	rclc_subscription_init_default(&subscriber_cmd_vel_r, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "drive_controller/cmd_vel_r");
+    rclc_subscription_init_default(&subscriber_reset_motors, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool), "drive_controller/reset");
 
-    {
-        std_msgs__msg__Float32 msg;
-	    rclc_subscription_init_default(
-	    	&subscriber_cmd_vel_r,
-	    	&node,
-	    	ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
-	    	"cmd_vel_r");
-    }
-
-    {
-        std_msgs__msg__Bool msg;
-	    rclc_subscription_init_default(
-	    	&subscriber_reset_motors,
-	    	&node,
-	    	ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
-	    	"drive_controller/reset");
-    }
-
-    {
-        std_msgs__msg__Float32 msg;
-        rclc_publisher_init_default(
-		    &publisher_cmd_vel_l,
-		    &node,
-		    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
-		    "cmd_vel_back_l");
-    }
-
-    {
-        std_msgs__msg__Float32 msg;
-        rclc_publisher_init_default(
-		    &publisher_cmd_vel_r,
-		    &node,
-		    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
-		    "cmd_vel_back_r");
-    }
-
-    {
-        std_msgs__msg__Int64 msg;
-        rclc_publisher_init_default(
-		    &publisher_ticks_l,
-		    &node,
-		    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64),
-		    "ticks_left");
-    }
-
-    {
-        std_msgs__msg__Int64 msg;
-        rclc_publisher_init_default(
-		    &publisher_ticks_r,
-		    &node,
-		    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64),
-		    "ticks_right");
-    }
+    rclc_publisher_init_default(&publisher_cmd_vel_l, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "drive_controller/cmd_vel_back_l");
+    rclc_publisher_init_default(&publisher_cmd_vel_r, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32), "drive_controller/cmd_vel_back_r");
+    rclc_publisher_init_default(&publisher_ticks_l, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "drive_controller/ticks_left");
+    rclc_publisher_init_default(&publisher_ticks_r, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int64), "drive_controller/ticks_right");
 
 	rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
-	rclc_executor_init(&executor, &support.context, 5, &allocator);
+	rclc_executor_init(&executor, &support.context, 6, &allocator);
 
-    {
-        std_msgs__msg__Float32 msg;
-        rclc_executor_add_subscription(&executor, &subscriber_cmd_vel_l, &msg, &cmdVelCallbackLeft, ON_NEW_DATA);
-    }
-    {
-        std_msgs__msg__Float32 msg;
-        rclc_executor_add_subscription(&executor, &subscriber_cmd_vel_r, &msg, &cmdVelCallbackRight, ON_NEW_DATA);
-    }
-    {
-        std_msgs__msg__Bool msg;
-        rclc_executor_add_subscription(&executor, &subscriber_reset_motors, &msg, &resetMotorsCallback, ON_NEW_DATA);
-    }
+    std_msgs__msg__Float32 sub_msg_cmd_vel_l;
+    std_msgs__msg__Float32 sub_msg_cmd_vel_r;
+    std_msgs__msg__Float32 sub_msg_reset;
+
+    rclc_executor_add_subscription(&executor, &subscriber_cmd_vel_l, &sub_msg_cmd_vel_l, &cmdVelCallbackLeft, ON_NEW_DATA);
+    rclc_executor_add_subscription(&executor, &subscriber_cmd_vel_r, &sub_msg_cmd_vel_r, &cmdVelCallbackRight, ON_NEW_DATA);
+    rclc_executor_add_subscription(&executor, &subscriber_reset_motors, &sub_msg_reset, &resetMotorsCallback, ON_NEW_DATA);
 	
     rclc_executor_add_timer(&executor, &cmd_vel_timer);
     rclc_executor_add_timer(&executor, &odom_timer);
@@ -229,6 +177,7 @@ void StartDefaultTask(void* argument) {
 
 	rcl_subscription_fini(&subscriber_cmd_vel_l, &node);
 	rcl_subscription_fini(&subscriber_cmd_vel_r, &node);
+	rcl_subscription_fini(&subscriber_reset_motors, &node);
     rcl_timer_fini(&cmd_vel_timer);
     rcl_timer_fini(&odom_timer);
 	rcl_node_fini(&node);

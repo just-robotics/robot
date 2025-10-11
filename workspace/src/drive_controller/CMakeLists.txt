@@ -22,13 +22,7 @@ add_executable(drive_controller
     src/drive_controller.cpp
 )
 
-add_executable(keyboard_handler
-    src/keyboard_handler.cpp
-)
-
-
 ament_target_dependencies(drive_controller geometry_msgs nav_msgs robot_msgs rclcpp tf2 tf2_ros)
-ament_target_dependencies(keyboard_handler rclcpp robot_msgs std_msgs)
 
 install(DIRECTORY
     src launch config
@@ -37,7 +31,6 @@ install(DIRECTORY
 
 install(TARGETS
     drive_controller
-    keyboard_handler
     DESTINATION lib/${PROJECT_NAME}
 )
 
