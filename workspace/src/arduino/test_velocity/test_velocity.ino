@@ -124,7 +124,7 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(MOTOR_2_ENCA), [] () {readEncoder(MOTOR_2_ENCB, &pose2);}, RISING);
     attachInterrupt(digitalPinToInterrupt(MOTOR_3_ENCA), [] () {readEncoder(MOTOR_3_ENCB, &pose3);}, RISING);
 
-    Serial.begin(2000000);
+    Serial.begin(115200);
     Serial.setTimeout(0);
 
     old_time = micros();
@@ -142,7 +142,7 @@ void loop() {
     float pos_change = rps * dt * tpr;
     target += pos_change;
 
-    Motor m = pid(pose, (int64_t)target);
+    Motor m = pid(pose, (int64_t)target, dt);
     setMotor(m, MOTOR_1_F_PIN, MOTOR_1_B_PIN);
 
     if (micros() - check_tps_old_time >= 1000000) {

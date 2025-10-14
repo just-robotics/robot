@@ -33,7 +33,7 @@ volatile int64_t pose2 = 0;
 volatile int64_t pose3 = 0;
 
 
-void readEncoder(int encb, int64_t* pose) {
+void readEncoder(int encb, volatile int64_t* pose) {
     int b = digitalRead(encb);
     int k = (encb == MOTOR_0_ENCB || encb == MOTOR_2_ENCB) ? 1 : -1;
     if (b > 0) {
@@ -82,7 +82,7 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(MOTOR_2_ENCA), [] () {readEncoder(MOTOR_2_ENCB, &pose2);}, RISING);
     attachInterrupt(digitalPinToInterrupt(MOTOR_3_ENCA), [] () {readEncoder(MOTOR_3_ENCB, &pose3);}, RISING);
 
-    Serial.begin(2000000);
+    Serial.begin(115200);
     Serial.setTimeout(0);
 }
 

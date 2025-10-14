@@ -45,7 +45,7 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(MOTOR_2_ENCA), [] () {readEncoder(MOTOR_2_ENCB, &pose2);}, RISING);
     attachInterrupt(digitalPinToInterrupt(MOTOR_3_ENCA), [] () {readEncoder(MOTOR_3_ENCB, &pose3);}, RISING);
 
-    Serial.begin(2000000);
+    Serial.begin(115200);
     Serial.setTimeout(0);
 }
 

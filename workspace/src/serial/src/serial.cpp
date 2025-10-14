@@ -4,7 +4,7 @@
 bool even = false;
 
 
-Serial::Serial(std::string port, size_t baudrate, size_t cmd_size, size_t msg_size) {
+Serial::Serial(std::string port, speed_t baudrate, size_t cmd_size, size_t msg_size) {
     fd_ = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 
     tcgetattr(fd_, &serial_port_settings_);
@@ -199,7 +199,7 @@ std::string Serial::port() {
 }
 
 
-size_t Serial::baudrate() {
+speed_t Serial::baudrate() {
     return baudrate_;
 }
 

@@ -22,7 +22,7 @@ private:
     struct termios serial_port_settings_;
 
     std::string port_;
-    size_t baudrate_;
+    speed_t baudrate_;
     size_t cmd_size_;
     size_t msg_size_;
     int fd_;
@@ -31,7 +31,7 @@ private:
     bool is_feedback_correct_;
 
 public:
-    Serial(std::string name, size_t baudrate, size_t cmd_size, size_t msg_size);
+    Serial(std::string name, speed_t baudrate, size_t cmd_size, size_t msg_size);
     ~Serial();
     Serial(const Serial& other) = delete;
     Serial(Serial&& other) = delete;
@@ -61,7 +61,7 @@ public:
     static float uint8arr_to_float(uint8_t* data);
 
     std::string port();
-    size_t baudrate();
+    speed_t baudrate();
     size_t cmd_size();
     size_t msg_size();
 };

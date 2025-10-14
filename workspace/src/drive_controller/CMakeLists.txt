@@ -5,6 +5,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -25,7 +28,6 @@ add_executable(ros_serial
 add_executable(keyboard_handler
     src/keyboard_handler.cpp
 )
-
 
 ament_target_dependencies(drive_controller geometry_msgs nav_msgs robot_msgs rclcpp tf2 tf2_ros)
 ament_target_dependencies(ros_serial robot_msgs rclcpp serial)

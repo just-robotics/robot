@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <numbers>
 
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
@@ -24,8 +25,6 @@ class DriveController : public rclcpp::Node {
 private:
     const size_t GLOBAL_VELS_NUM_ = 3;
     const size_t GLOBAL_POSES_NUM_ = 3;
-
-    const float M_2PI_ = 6.28;
     
     size_t reset_timeout_;
     float kp_, ki_, kd_;
@@ -138,12 +137,12 @@ DriveController::DriveController() : Node("drive_controller") {
     RCLCPP_INFO(this->get_logger(), "ki: %lf", ki_);
     RCLCPP_INFO(this->get_logger(), "kd: %lf", kd_);
     RCLCPP_INFO(this->get_logger(), "cmd_size: %ld", cmd_size_);
-    RCLCPP_INFO(this->get_logger(), "vel_num: %ld", pose_num_);
-    RCLCPP_INFO(this->get_logger(), "vel_size: %ld", pose_size_);
+    RCLCPP_INFO(this->get_logger(), "pose_num: %ld", pose_num_);
+    RCLCPP_INFO(this->get_logger(), "pose_size: %ld", pose_size_);
     RCLCPP_INFO(this->get_logger(), "vel_num: %ld", vel_num_);
     RCLCPP_INFO(this->get_logger(), "vel_size: %ld", vel_size_);
-    RCLCPP_INFO(this->get_logger(), "vel_num: %ld", target_num_);
-    RCLCPP_INFO(this->get_logger(), "vel_size: %ld", target_size_);
+    RCLCPP_INFO(this->get_logger(), "target_num: %ld", target_num_);
+    RCLCPP_INFO(this->get_logger(), "target_size: %ld", target_size_);
 
     serial_pub_ = this->create_publisher<robot_msgs::msg::UInt8Vector>(serial_sub_topic, 10);
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(odom_pub_topic, 10);
@@ -214,7 +213,7 @@ std::vector<float> DriveController::calcInverseKinematics(std::vector<float> W) 
 std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
     std::vector<float> P;
     for (size_t i = 0; i < T.size(); i++) {
-        P.push_back(M_2PI_ * T[i] / ticks_);
+        P.push_back(2*std::numbers::pi * T[i] / ticks_);
     }
 
     return P;
@@ -224,7 +223,7 @@ std::vector<float> DriveController::ticks2rads(std::vector<int64_t> T) {
 std::vector<int64_t> DriveController::rads2ticks(std::vector<float> P) {
     std::vector<int64_t> T;
     for (size_t i = 0; i < P.size(); i++) {
-        T.push_back(P[i] * ticks_ / M_2PI_);
+        T.push_back(P[i] * ticks_ / (2*std::numbers::pi));
     }
 
     return T;
@@ -405,7 +404,7 @@ void DriveController::resetOdomCallback(const std_msgs::msg::Bool& msg) {
 
     serial_pub_->publish(serial_msg);
 
-    sleep(reset_timeout_);
+    rclcpp::sleep_for(std::chrono::seconds(reset_timeout_));
     prev_X_ = reset_X_;
     prev_P_ = reset_P_;
 }

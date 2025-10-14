@@ -1,11 +1,11 @@
-#define ENCA 2
-#define ENCB 3
+#define ENCA 18
+#define ENCB 14
 
 
 int64_t pose = 0;
 
 
-int64_t readEncoder() {
+void readEncoder() {
     int b = digitalRead(ENCB);
     if (b > 0) {
         pose++;
@@ -22,7 +22,7 @@ void setup() {
 
     attachInterrupt(digitalPinToInterrupt(ENCA), readEncoder, RISING);
     
-    Serial.begin(2000000);
+    Serial.begin(115200);
     Serial.setTimeout(0);
 }
 

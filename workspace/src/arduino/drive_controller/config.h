@@ -26,7 +26,7 @@
 
 #define TPR              206.26
 
-#define SERIAL_BAUDRATE 2000000
+#define SERIAL_BAUDRATE  115200
 #define START_BYTE           64
 
 #define START_BYTE0_IDX       0
