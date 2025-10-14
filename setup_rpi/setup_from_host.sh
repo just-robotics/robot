@@ -118,6 +118,7 @@ BASHRC="$ROOTFS/home/pi/.bashrc"
 grep -qxF "alias robot_setup='/home/pi/.$HELPER_SCRIPT'" "$BASHRC" || \
 echo "alias robot_setup='/home/pi/.$HELPER_SCRIPT'" >> "$BASHRC"
 grep -qxF "rfkill unblock all" "$BASHRC" || echo "rfkill unblock all" >> "$BASHRC"
+grep -qxF "ROBOT_ID=$INDEX" "$BASHRC" || echo "ROBOT_ID=$INDEX" >> "$BASHRC"
 # =================================================
 
 sync
@@ -125,4 +126,3 @@ sync
 echo "Systemd-networkd and wpa_supplicant configs created."
 echo "Wi-Fi: $STATIC_IP_WIFI"
 echo "Ethernet: $STATIC_IP_ETH"
-
