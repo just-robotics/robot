@@ -6,3 +6,4 @@ __pycache__/
 .catkin_tools
 devel
 logs
+.env
