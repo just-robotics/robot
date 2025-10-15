@@ -1,0 +1,133 @@
+services:
+  ros2:
+    build:
+      context: .
+      dockerfile: dockerfile.ros2
+    image: ros2_humble
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../ros2_ws:/workspace
+      - ./entrypoint_ros2.sh:/entrypoint_ros2.sh
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+    # entrypoint: ["bash", "/entrypoint_ros2.sh"]
+    entrypoint: []
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+
+  # ros2-builder:
+  #   build:
+  #     context: .
+  #     dockerfile: dockerfile.ros2
+  #   image: ros2_humble
+
+  #   network_mode: host
+
+  #   working_dir: /workspace
+  #   volumes:
+  #     - ../ros2_ws:/workspace
+  #     - ./entrypoint_ros2.sh:/entrypoint_ros2.sh
+
+  #   environment:
+  #     - ROBOT_ID=${ROBOT_ID}
+  #     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+  #   entrypoint: []
+
+  #   privileged: true
+
+  #   tty: true
+  #   stdin_open: true
+  #   command: bash
+  #   restart: unless-stopped
+
+  bridge:
+    build:
+      context: .
+      dockerfile: dockerfile.ros2
+    image: ros2_humble
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../bridge_ws:/workspace
+      - ./entrypoint_bridge.sh:/entrypoint_bridge.sh
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+    entrypoint: ["bash", "/entrypoint_bridge.sh"]
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+
+  ros1:
+    build:
+      context: .
+      dockerfile: dockerfile.ros1
+    image: ros1_noetic
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../ros1_ws:/workspace
+      - ./entrypoint_ros1.sh:/entrypoint_ros1.sh
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+
+    entrypoint: ["bash", "/entrypoint_ros1.sh"]
+
+    devices:
+      - "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_756303139363510190C0-if00:/dev/ttyACM0"
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+
+  ros1-builder:
+    build:
+      context: .
+      dockerfile: dockerfile.ros1
+    image: ros1_noetic
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../ros1_ws:/workspace
+      - ~/Arduino/libraries:/arduino/libraries
+      - ./entrypoint_arduino.sh:/entrypoint_arduino.sh
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+
+    entrypoint: ["bash", "/entrypoint_arduino.sh"]
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped

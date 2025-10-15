@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    cmd_vel_sub_topic: cmd_vel                         # input -> ros2
+    cmd_vel_pub_topic: drive_controller/cmd_vel_legacy # ros2 -> ros1 -> arduino
+    odom_sub_topic: drive_controller/odom_legacy       # arduino -> ros1 -> ros2
+    odom_pub_topic: odom                               # ros2 -> output
+    reset_sub_topic: drive_controller/reset            # input -> ros2
+    reset_pub_topic: drive_controller/reset_legacy     # ros2 -> ros1 -> arduino

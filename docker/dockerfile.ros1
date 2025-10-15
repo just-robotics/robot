@@ -1,0 +1,37 @@
+FROM osrf/ros:noetic-desktop-full
+
+# workspace setup
+
+ENV ROS_DISTRO=noetic
+ENV WS="/workspace"
+
+RUN echo '\
+if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then\n\
+    source "/opt/ros/${ROS_DISTRO}/setup.bash"\n\
+fi\n\
+if [ -f "${WS}/devel/setup.bash" ]; then\n\
+    source "${WS}/devel/setup.bash"\n\
+    cd "${WS}"\n\
+fi\n\
+alias s=". ./devel/setup.bash"\n\
+alias l="clear"' >> /root/.bashrc
+
+# install packages
+
+RUN apt update -y
+
+RUN DEBIAN_FRONTEND=noninteractive apt install -y iproute2 net-tools iputils-ping
+RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-pip python3-venv
+RUN DEBIAN_FRONTEND=noninteractive apt install -y vim nano
+
+RUN python3 -m pip install setuptools==58.2.0
+
+RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-catkin-tools
+
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-teleop-twist-keyboard
+
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rosserial-arduino
+RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rosserial
+
+RUN rm -rf /ros_entrypoint.sh
