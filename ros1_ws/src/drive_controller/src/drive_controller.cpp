@@ -121,6 +121,10 @@ void DriveController::odomCallback(const std_msgs::Int64MultiArray::ConstPtr& ms
     float dp2 = P[2] - prev_P_[2];
     float dp3 = P[3] - prev_P_[3];
 
+    if (std::abs(dp0) > 10. || std::abs(dp1) > 10. || std::abs(dp2) > 10. || std::abs(dp3) > 10.) {
+        return;
+    }
+
     float dx = (+dp0 + dp1 + dp2 + dp3) * r_ / 4;
     float dy = (-dp0 + dp1 + dp2 - dp3) * r_ / 4;
     float dY = (-dp0 + dp1 - dp2 + dp3) * r_ / 4 / (lx_ + ly_);

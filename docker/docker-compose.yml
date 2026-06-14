@@ -11,13 +11,15 @@ services:
     volumes:
       - ../ros2_ws:/workspace
       - ./entrypoint_ros2.sh:/entrypoint_ros2.sh
+        #- ${HOME}/.cyclone_dds/cyclonedds.xml:/root/cyclonedds.xml:ro
 
     environment:
       - ROBOT_ID=${ROBOT_ID}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+        #- ROS_DOMAIN_ID=1
+        #- CYCLONEDDS_URI=file:///root/cyclonedds.xml
 
-    # entrypoint: ["bash", "/entrypoint_ros2.sh"]
-    entrypoint: []
+    entrypoint: ["bash", "/entrypoint_ros2.sh"]
 
     privileged: true
 
@@ -26,33 +28,7 @@ services:
     command: bash
     restart: unless-stopped
 
-  # ros2-builder:
-  #   build:
-  #     context: .
-  #     dockerfile: dockerfile.ros2
-  #   image: ros2_humble
-
-  #   network_mode: host
-
-  #   working_dir: /workspace
-  #   volumes:
-  #     - ../ros2_ws:/workspace
-  #     - ./entrypoint_ros2.sh:/entrypoint_ros2.sh
-
-  #   environment:
-  #     - ROBOT_ID=${ROBOT_ID}
-  #     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-
-  #   entrypoint: []
-
-  #   privileged: true
-
-  #   tty: true
-  #   stdin_open: true
-  #   command: bash
-  #   restart: unless-stopped
-
-  bridge:
+  ros2-builder:
     build:
       context: .
       dockerfile: dockerfile.ros2
@@ -62,12 +38,42 @@ services:
 
     working_dir: /workspace
     volumes:
-      - ../bridge_ws:/workspace
-      - ./entrypoint_bridge.sh:/entrypoint_bridge.sh
+      - ../ros2_ws:/workspace
+      - ./entrypoint_ros2.sh:/entrypoint_ros2.sh
+        #- ${HOME}/.cyclone_dds/cyclonedds.xml:/root/cyclonedds.xml:ro
 
     environment:
       - ROBOT_ID=${ROBOT_ID}
       - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+        #- ROS_DOMAIN_ID=1
+        #- CYCLONEDDS_URI=file:///root/cyclonedds.xml
+
+    entrypoint: []
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+
+  bridge:
+    build:
+      context: .
+      dockerfile: dockerfile.bridge
+    image: bridge
+
+    network_mode: host
+
+    volumes:
+      - ./entrypoint_bridge.sh:/entrypoint_bridge.sh
+        #- ${HOME}/.cyclone_dds/cyclonedds.xml:/root/cyclonedds.xml:ro
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+        #- ROS_DOMAIN_ID=1
+        #- CYCLONEDDS_URI=file:///root/cyclonedds.xml
 
     entrypoint: ["bash", "/entrypoint_bridge.sh"]
 
@@ -96,9 +102,6 @@ services:
 
     entrypoint: ["bash", "/entrypoint_ros1.sh"]
 
-    devices:
-      - "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_756303139363510190C0-if00:/dev/ttyACM0"
-
     privileged: true
 
     tty: true
@@ -123,7 +126,7 @@ services:
     environment:
       - ROBOT_ID=${ROBOT_ID}
 
-    entrypoint: ["bash", "/entrypoint_arduino.sh"]
+    entrypoint: []
 
     privileged: true
 
@@ -131,3 +134,33 @@ services:
     stdin_open: true
     command: bash
     restart: unless-stopped
+
+  arduino:
+    build:
+      context: .
+      dockerfile: dockerfile.ros1
+    image: ros1_noetic
+
+    network_mode: host
+
+    working_dir: /workspace
+    volumes:
+      - ../ros1_ws:/workspace
+      - ~/Arduino/libraries:/arduino/libraries
+      - ./entrypoint_arduino.sh:/entrypoint_arduino.sh
+
+    environment:
+      - ROBOT_ID=${ROBOT_ID}
+
+    entrypoint: ["bash", "/entrypoint_arduino.sh"]
+
+    devices:
+      - "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0042_756303139363510190C0-if00:/dev/arduino"
+
+    privileged: true
+
+    tty: true
+    stdin_open: true
+    command: bash
+    restart: unless-stopped
+

@@ -5,6 +5,7 @@
         <node pkg="drive_controller" type="drive_controller" name="drive_controller" output="screen">
             <param name="odom_pub_topic" value="odom_legacy"/>
             <param name="odom_sub_topic" value="arduino_odom"/>
+            <param name="odom_vels_sub_topic" value="arduino_velocities"/>
             <param name="cmd_vel_sub_topic" value="cmd_vel_legacy"/>
             <param name="cmd_vel_pub_topic" value="velocities"/>
             <param name="reset_sub_topic" value="reset_legacy"/>
@@ -12,9 +13,12 @@
             <param name="lx" value="0.097"/>
             <param name="ly" value="0.107"/>
             <param name="ticks" value="206.26"/>
-            <param name="frame_id" value="odom"/>
-            <param name="child_frame_id" value="base_footprint"/>
+            <param name="frame_id" value="robot$(env ROBOT_ID)/odom"/>
+            <param name="child_frame_id" value="robot$(env ROBOT_ID)/base_footprint"/>
             <param name="reset_timeout" value="1"/>
         </node>
+	<node name="rosserial_node" pkg="rosserial_arduino" type="serial_node.py">
+	    <param name="port" type="string" value="/dev/ttyACM0"/>
+	</node>
     </group>
 </launch>

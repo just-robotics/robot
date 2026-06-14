@@ -1,4 +1,4 @@
-FROM osrf/ros:noetic-desktop-full
+FROM ros:noetic
 
 # workspace setup
 
@@ -28,7 +28,6 @@ RUN python3 -m pip install setuptools==58.2.0
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y python3-catkin-tools
 
-RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-joint-state-publisher-gui
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-teleop-twist-keyboard
 
 RUN DEBIAN_FRONTEND=noninteractive apt install -y ros-${ROS_DISTRO}-rosserial-arduino
